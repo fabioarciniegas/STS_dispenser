@@ -11,21 +11,33 @@
 
     <title>STS Token Dispenser</title>
 
-    <!-- Bootstrap core CSS -->
+    <!-- Bootstrap  -->
 <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
 
     <!-- Custom styles for this template -->
     <link href="jumbotron-narrow.css" rel="stylesheet">
 
     <!-- Just for debugging purposes. Don't actually copy these 2 lines! -->
-    <!--[if lt IE 9]><script src="../../assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
+    <!--[if lt IE 9]><script src="../../assets/js/ie8-responsive-file-warning.js"></script><![endif]
     <script src="../../assets/js/ie-emulation-modes-warning.js"></script>
+-->
+    <script type="text/javascript" src="ZeroClipboard.js"></script>
+
 
     <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
     <!--[if lt IE 9]>
       <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
       <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
     <![endif]-->
+
+    <script>
+      function format_content(f){
+        $( "li[class|=active]" ).removeClass( "active" );
+        var li = $( "#"+f ).addClass( "active" );
+}
+    </script>
   </head>
 
   <body>
@@ -34,48 +46,66 @@
       <div class="header clearfix">
         <nav>
           <ul class="nav nav-pills pull-right">
-            <li role="presentation" class="active"><a href="#">bash</a></li>
-            <li role="presentation"><a href="#">json</a></li>
-            <li role="presentation"><a href="#">binary</a></li>
-            <li role="presentation"><a href="#">help</a></li>
+            <li id="bash" role="presentation" class="active"><a href="javascript:format_content('bash')">bash</a></li>
+            <li id="json" role="presentation"><a href="javascript:format_content('json')">json</a></li>
+            <li id="binary" role="presentation"><a href="javascript:format_content('binary')">binary</a></li>
           </ul>
         </nav>
         <h3 class="text-muted">STS Dispenser</h3>
       </div>
 
       <div class="jumbotron">
-        <h1>Your STS Token</h1>
-        <p class="lead">
-TODO: insert STS code here
-</p>
-        <p><a class="btn btn-lg btn-success" href="#" role="button">Sign up today</a></p>
+        <h2>Your STS Token</h2>
+        <p class="lead"> Will be available until TODO: metadata	</p>
+
+	<pre id="clipboard_pre">
+	  Insert STS here.
+	</pre>
+
+	<p><a data-clipboard-target="clipboard_pre" id="button_text" class="btn btn-lg btn-success" href="#" role="button">Copy to clipboard</a></p>
+    <script type="text/javascript">
+      var client = new ZeroClipboard(document.getElementById('button_text'));
+    </script>
       </div>
 
-      <div class="row marketing">
+<div align="right"><a data-toggle="collapse" data-target="#help_text" href="#" > help &gt;&gt</a></div>
+
+
+      <div id="help_text" class="collapse">
+      <div class="row marketing" >
+
         <div class="col-lg-6">
           <h4>What is this?</h4>
-          <p>This app is one form integration between an enterprise authentication source (e.g. ADFS) and Amazon's AWS. Usually, such integration is associated with AWS console login, this app, however, gives the user an STS token, so she can make AWS calls via the command line or APIs.</p>
+          <p>A SAML 2.0 Service Provider, which serves AWS STS tokens. In other words is a helper app that gives you temporary credentials to make AWS calls. It is the result of authenticating with your enterprise credentials instead of using AWS long-term credentials associated with a user.</p>
 
-          <h4>Who needs this?</h4>
-          <p>An organization which prefers to provision credentials ONLY in their own Active Directory, instead of having users provisioned inside AWS.</p>
+          <h4>Why is it useful?</h4>
+AWS federation is commonly understood as loggin in to AWS console by authenticating through Active Directory. Some people would like extend that federation model to additionally make CLI and API calls. It is useful because instead of using long-term access keys, the user can make calls using the temporary credentials above. Using this extended form of federation an organization can reduce the number of credentials provisioned inside AWS and instead manage authentication on its own (e.g. exclusively inside Active Directory, without ever provisioning passwords or keys to users inside AWS.)</p>
+
 	</div>
-        <div class="col-lg-6">
-          <h4>Why use it?</h4>
-          <p>Because you already have a working ADFS-AWS federation and want to extend the sign-on benefits to CLI or API calls.</p>
 
-          <h4>Demo</h4>
+        <div class="col-lg-6">
+<!--          <h4>Why use it?</h4>
+          <p>If you have a working AWS federation (e.g. with ADFS), and want to make AWS CLI/API calls authenticating through AD instead of authenticating wih AWS-provided access keys.</p>
+-->
+
+          <h4>Usage Demo video</h4>
           <p>You can watch a simple demo video here. For more detailed information on implementation and configuration see the help page.</p>
 
+          <h4>Quick Configuration</h4>
+          <p>Add this <a href="metadata.xml">metadata</a> to your ADFS or similar iDP to add the STS Dispenser as a service provider</p>. For more see the documentation folder.</p>
         </div>
-      </div>
 
+      </div>
+      </div>
       <footer class="footer">
         <p>&copy; Fabio Arciniegas, Trend Micro 2015</p>
       </footer>
 
     </div> <!-- /container -->
 
-    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug 
     <script src="../../assets/js/ie10-viewport-bug-workaround.js"></script>
+-->
+
   </body>
 </html>
