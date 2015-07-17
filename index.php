@@ -1,8 +1,8 @@
-<?php include("config.php"); ?>
+<?php require("config.php"); ?>
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>STS Token Dispenser</title>
+    <title>STS Token Dispenser</title>    
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -45,12 +45,14 @@
       </div>
 
       <div class="jumbotron">
-        <h2>Your STS Token</h2>
 
 <!-- *************************************************
      STS LOGIC
      ************************************************* -->
+
 <?php
+#TODO: manage AWS package dependency more generally
+#TODO: check health of metadata 
 require '/home/ubuntu/vendor/autoload.php';
 use Aws\Sts\StsClient;
 use Aws\Iam\IamClient;
@@ -65,10 +67,10 @@ $client = StsClient::factory(array(
 $method = $_SERVER['REQUEST_METHOD'];
 
 if ($method != "POST") {
-   print "This is not a page to be called directly.  <a href=\"";
-   exit();
+   print "To receive your token you must first authenticate with {$config['IdentityProviderDisplayName']}";
 }
-
+else {
+    print   "<h2>Your STS Token</h2>";
 //print base64_decode($_POST['SAMLResponse']);
 //$input = print file_get_contents("php://input");
 
@@ -119,6 +121,7 @@ $iam_client = IamClient::factory(array(
 
 $response = $iam_client->listPolicies(array('OnlyAttached' => true));
 //print "<br/>This token allows you to execute calls allowed by the policy " . $result['Credentials']['Expiration'] . "(". $diff ." minutes)";
+}
 
 } catch (Exception $e) {
 
@@ -126,12 +129,8 @@ $response = $iam_client->listPolicies(array('OnlyAttached' => true));
    print "<br/><br/> If you have trouble reloading this page.  <a href=\"https://ec2-52-4-120-194.compute-1.amazonaws.com/saml/module.php/saml/disco.php?entityID=https%3A%2F%2Fec2-52-4-120-194.compute-1.amazonaws.com%2Fsaml%2Fmodule.php%2Fsaml%2Fsp%2Fmetadata.php%2FSTSDispenser-SP&return=https%3A%2F%2Fec2-52-4-120-194.compute-1.amazonaws.com%2Fsaml%2Fmodule.php%2Fsaml%2Fsp%2Fdiscoresp.php%3FAuthID%3D_e6c6daf549e961f61680f96a8d604e308124f4df4a%253Ahttps%253A%252F%252Fec2-52-4-120-194.compute-1.amazonaws.com%252Fsaml%252Fmodule.php%252Fcore%252Fas_login.php%253FAuthId%253DSTSDispenser-SP%2526ReturnTo%253Dhttps%25253A%25252F%25252Fec2-52-4-120-194.compute-1.amazonaws.com%25252Fsaml%25252Fmodule.php%25252Fcore%25252Fauthenticate.php%25253Fas%25253DSTSDispenser-SP&returnIDParam=idpentityid\">Start at your Identity Provider.</a>";
    exit();
 
-  
 }
 
-// header('Content-Type: ' . $response->get('ContentType'));
-
-// 		      echo $response->get('Body');
 ?>
 
 	</pre>

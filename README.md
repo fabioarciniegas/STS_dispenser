@@ -7,4 +7,18 @@ A SAML 2.0 Service Provider, which serves AWS STS tokens. In other words is a he
 AWS federation is commonly understood as loggin in to AWS console by authenticating through Active Directory. Some people would like extend that federation model to additionally make CLI and API calls. Instead of using long-term access keys, the user can make calls using temporary credentials. Using this extended form of federation an organization can reduce the number of credentials provisioned inside AWS and instead manage authentication on its own (e.g. exclusively inside Active Directory, without ever provisioning passwords or keys to users inside AWS.)
 
 
-Fabio Arciniegas, Trend Micro 2015
+# Installation
+
+## Local Dependencies
+ 
+ - php5
+ - aws libraries for php
+
+### Federation Dependencies
+
+This application acts as a SAML 2.0 Service Provider. For it to work,  it needs a SAML 2.0 Identity Provider. 
+
+TODO: explain configuration of IdP.
+TODO: others, explain the need for php5-curl, guzzle
+
+=Fabio Arciniegas, Trend Micro 2015
