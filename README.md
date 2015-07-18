@@ -9,16 +9,33 @@ AWS federation is commonly understood as loggin in to AWS console by authenticat
 
 # Installation
 
-## Local Dependencies
- 
- - php5
- - aws libraries for php
+Install composer if you have not done so already:
 
-### Federation Dependencies
+```
+curl -sS https://getcomposer.org/installer | php
+```
+install dependency libraries (aws libraries)
+```
+php composer.phar composer.json
+```
+
+Make www directory available through webserver. e.g. point the document root of your virtual server in apache 2
+
+```
+ DocumentRoot /var/webapps/STS_dispenser/www
+```
+
+TODO: explain configuration of IdP.
+
+
+## Local Dependencies 
+ 
+ - a webserver running php5
+ - aws libraries for php 2.*
+
+## Federation Dependencies
 
 This application acts as a SAML 2.0 Service Provider. For it to work,  it needs a SAML 2.0 Identity Provider. 
 
-TODO: explain configuration of IdP.
-TODO: others, explain the need for php5-curl, guzzle
 
 =Fabio Arciniegas, Trend Micro 2015
