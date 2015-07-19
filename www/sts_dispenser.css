@@ -67,6 +67,7 @@ body {
   .footer {
     padding-right: 0;
     padding-left: 0;
+    font-size: 8px;
   }
   /* Space out the masthead */
   .header {
@@ -76,4 +77,13 @@ body {
   .jumbotron {
     border-bottom: 0;
   }
+}
+
+.warning {
+  color: #990000;
+}
+
+.copyright {
+  color: #777;
+  text-size: 4px;
 }

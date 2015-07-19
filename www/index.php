@@ -1,8 +1,23 @@
-<?php require("config.php"); ?>
+<?php 
+require("../config.php"); 
+require '../vendor/autoload.php';
+# TODO: check health of metadata 
+use Aws\Sts\StsClient;
+use Aws\Iam\IamClient;
+?>
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
+
     <title>STS Token Dispenser</title>    
+<?php
+if ($method != "POST"  && $config['AutoInitiateOnGET']) {
+?>
+<meta http-equiv="refresh" content="3; URL='<?php echo $config['IdentityProviderSignInURL'];?>'" />
+<?php
+}
+?>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -13,7 +28,7 @@
     <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
-    <link href="jumbotron-narrow.css" rel="stylesheet">
+    <link href="sts_dispenser.css" rel="stylesheet">
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/zeroclipboard/2.2.0/ZeroClipboard.js"></script>
 
     <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
@@ -23,9 +38,23 @@
     <![endif]-->
 
     <script>
+      var sts = "(no token available)";                                                                  
       function format_content(f){
         $( "li[class|=active]" ).removeClass( "active" );
         var li = $( "#"+f ).addClass( "active" );
+
+        switch (f) {
+        case "bash":
+            $("#sts_pre").html($sts_as_bash);
+            break;
+        case "json":
+            $("#sts_pre").html($sts_as_json);
+            break;
+        case "saml":
+            $("#sts_pre").html($saml);
+            break;
+        }
+
 }
     </script>
   </head>
@@ -38,7 +67,9 @@
           <ul class="nav nav-pills pull-right">
             <li id="bash" role="presentation" class="active"><a href="javascript:format_content('bash')">bash</a></li>
             <li id="json" role="presentation"><a href="javascript:format_content('json')">json</a></li>
-            <li id="binary" role="presentation"><a href="javascript:format_content('binary')">binary</a></li>
+<?php if ($config['FullSAMLAssertionAndResponseAvailable'] == true) { ?>
+<li id="saml" role="presentation"><a href="javascript:format_content('binary')">(debug)</a></li>
+<?php } ?>
           </ul>
         </nav>
         <h3 class="text-muted">STS Dispenser</h3>
@@ -51,11 +82,6 @@
      ************************************************* -->
 
 <?php
-#TODO: manage AWS package dependency more generally
-#TODO: check health of metadata 
-require '/home/ubuntu/vendor/autoload.php';
-use Aws\Sts\StsClient;
-use Aws\Iam\IamClient;
 
 try {
 
@@ -67,19 +93,21 @@ $client = StsClient::factory(array(
 $method = $_SERVER['REQUEST_METHOD'];
 
 if ($method != "POST") {
-   print "To receive your token you must first authenticate with {$config['IdentityProviderDisplayName']}";
+    print "To receive a token you must  authenticate.";
+# TODO: cosmetic improvement: customize whether the link is shown.
+   print "<div id=\"warn\" class=\"warning\">You are now being redirected to {$config['IdentityProviderDisplayName']}</div>";
 }
 else {
     print   "<h2>Your STS Token</h2>";
-//print base64_decode($_POST['SAMLResponse']);
-//$input = print file_get_contents("php://input");
-
+    $saml=$_POST['SAMLResponse'];
+    if($config['FullSAMLAssertionAndResponseAvailable'] == true){
+        print "<script>var IdP_assertion=${base64_decode($_POST['SAMLResponse'])}</script>";
+    }
 $result = $client->assumeRoleWithSAML(array(
-    // RoleArn is required
+    // TODO: make role to assume variable, of course. May need to take it from the saml 
+    // assertion that is coming from the IdP.
     'RoleArn' => 'arn:aws:iam::556247969450:role/STSasIdPAssume',
-    // PrincipalArn is required
     'PrincipalArn' => 'arn:aws:iam::556247969450:saml-provider/STSTokenProvierAsIdP',
-    // SAMLAssertion is required
     'SAMLAssertion' => $_POST['SAMLResponse'],
 //    'Policy' => 'string',
     'DurationSeconds' => 3600,
@@ -91,13 +119,13 @@ $current_time = time();
 $diff = round(($exp2 - $current_time)/60,2);
 print "<p class=\"lead\"> Will be valid until  ". $result['Credentials']['Expiration'] . "(". $diff ." minutes)"."	</p>";
 
-print	"<pre id=\"clipboard_pre\">";
+$sts_as_bash = "export AWS_ACCESS_KEY_ID=" . $result['Credentials']['AccessKeyId'] . "\n";
+$sts_as_bash += "export AWS_SECRET_ACCESS_KEY=" . $result['Credentials']['SecretAccessKey'] . "\n";
+$sts_as_bash += "export AWS_SECURITY_TOKEN=" . $result['Credentials']['SessionToken'] . "\n";
+print	"<pre id=\"sts_pre\">";
+    $sts_as_json = json_encode($result['Credentials']['AccessKeyId'] );
 
-print "export AWS_ACCESS_KEY_ID=" . $result['Credentials']['AccessKeyId'] . "\n";
-print "export AWS_SECRET_ACCESS_KEY=" . $result['Credentials']['SecretAccessKey'] . "\n";
-print "export AWS_SECURITY_TOKEN=" . $result['Credentials']['SessionToken'] . "\n";
-
-
+print	"<pre id=\"sts_pre\">";
 //print $result;
 $credentials = $result->get('Credentials');
 $session_token     = $credentials['SessionToken'];
@@ -135,21 +163,27 @@ $response = $iam_client->listPolicies(array('OnlyAttached' => true));
 
 	</pre>
 
-	<p><a data-clipboard-target="clipboard_pre" id="button_text" class="btn btn-lg btn-success" href="#" role="button">Copy to clipboard</a></p>
+<?php
+if ($method == "POST") {
+?>
+	<p><a data-clipboard-target="sts_pre" id="button_text" class="btn btn-lg btn-success" href="#" role="button">Copy to clipboard</a></p>
     <script type="text/javascript">
       var client = new ZeroClipboard(document.getElementById('button_text'));
     </script>
+
+<?php
+}
+?>
       </div>
 
 <div align="right"><a data-toggle="collapse" data-target="#help_text" href="#" > help &gt;&gt</a></div>
-
 
       <div id="help_text" class="collapse">
       <div class="row marketing" >
 
         <div class="col-lg-6">
           <h4>What is an STS token?</h4>
-<p>These are temporary credentials you can use instead of hard-coding your actual secret key/access key on a script. The easiest way to use them is to copy paste them as bash environment variables and start running aws cli commands.</p>
+<p>Temporary credentials you can use instead of hard-coding your actual secret key/access key on a script. The easiest way to use it is to copy paste the values as bash environment variables and start running aws cli commands.</p>
 
           <h4>What is this page?</h4>
           <p>A SAML 2.0 Service Provider, which serves AWS STS tokens. In other words is a helper app that gives you temporary credentials to make AWS calls. It is the result of authenticating with your enterprise credentials instead of using AWS long-term credentials associated with a user.</p>
@@ -174,7 +208,7 @@ AWS federation is commonly understood as loggin in to AWS console by authenticat
       </div>
       </div>
       <footer class="footer">
-        <p>&copy; Fabio Arciniegas, Trend Micro 2015</p>
+        <p class="copyright">&copy; Fabio Arciniegas, Trend Micro 2015</p>
       </footer>
 
     </div> <!-- /container -->
