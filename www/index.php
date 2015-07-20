@@ -15,9 +15,9 @@ use Aws\Iam\IamClient;
 <?php
     $method = $_SERVER['REQUEST_METHOD'];
 
-if ($method != "POST"  && $config['AutoInitiateOnGET']) {
+if ($method != "POST"  && AUTO_INITIATE) {
 ?>
-<meta http-equiv="refresh" content="<?php echo  $config['RedirectDelay'];?>;URL='<?php echo $config['IdPSingleSignOnURL'];?>?SAMLRequest=<?php  echo generateAuthnRequest();?>'/>
+<meta http-equiv="refresh" content="<?php echo  REDIRECT_DELAY;?>;URL='<?php echo IDP_SSO_URL;?>?SAMLRequest=<?php  echo generateAuthnRequest();?>'/>
 <?php
 }
 ?>
@@ -70,7 +70,7 @@ if ($method != "POST"  && $config['AutoInitiateOnGET']) {
           <ul class="nav nav-pills pull-right">
             <li id="bash" role="presentation" class="active"><a href="javascript:format_content('bash')">bash</a></li>
             <li id="json" role="presentation"><a href="javascript:format_content('json')">json</a></li>
-<?php if ($config['FullSAMLAssertionAndResponseAvailable'] == true) { ?>
+<?php if (FullSAMLAssertionAndResponseAvailable == true) { ?>
 <li id="saml" role="presentation"><a href="javascript:format_content('binary')">(debug)</a></li>
 <?php } ?>
           </ul>
@@ -88,17 +88,15 @@ if ($method != "POST"  && $config['AutoInitiateOnGET']) {
 
 try {
 if ($method != "POST") {
-            print generateAuthnRequest();
 
     print "To receive a token you must  authenticate.";
-    if ($config['AutoInitiateOnGET']) {
-          print "<div id=\"warn\" class=\"warning\">You are now being redirected to <a href=\"{$config['IdPSingleSignOnURL']}?SAMLRequest=";
-            print generateAuthnRequest();
-       print "\">{$config['IdentityProviderDisplayName']}</a></div>";
+   $ls_template= "<div id=\"warn\" class=\"warning\">You are now being redirected to <a href=\"%s?SAMLRequest=%s\">%s</a></div>";
+
+    if (AUTO_INITIATE) {
+         print sprintf($ls_template,IDP_SSO_URL,generateAuthnRequest(),IDP_DISPLAY_NAME);
     }
 }
-else {
-
+    else {
     $client = StsClient::factory(array(
         'region' => 'us-east-2',
         'version' => 'latest')
@@ -106,7 +104,7 @@ else {
 
     print   "<h2>Your STS Token</h2>";
     $saml=$_POST['SAMLResponse'];
-    if($config['FullSAMLAssertionAndResponseAvailable'] == true){
+    if(FullSAMLAssertionAndResponseAvailable == true){
         print "<script>var IdP_assertion=${base64_decode($_POST['SAMLResponse'])}</script>";
     }
 $result = $client->assumeRoleWithSAML(array(
