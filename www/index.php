@@ -17,7 +17,7 @@ use Aws\Iam\IamClient;
 
 if ($method != "POST"  && $config['AutoInitiateOnGET']) {
 ?>
-<meta http-equiv="refresh" content="<?php echo  $config['RedirectDelay'];?>;URL='<?php echo $config['IdPSingleSignOnURL'];?>'" />
+<meta http-equiv="refresh" content="<?php echo  $config['RedirectDelay'];?>;URL='<?php echo $config['IdPSingleSignOnURL'];?>?SAMLRequest=<?php  echo generateAuthnRequest();?>'/>
 <?php
 }
 ?>
@@ -88,6 +88,7 @@ if ($method != "POST"  && $config['AutoInitiateOnGET']) {
 
 try {
 if ($method != "POST") {
+            print generateAuthnRequest();
 
     print "To receive a token you must  authenticate.";
     if ($config['AutoInitiateOnGET']) {

@@ -24,21 +24,33 @@ $authnRequestTemplate = <<<AUTHREQ
 <samlp:AuthnRequest
     xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"
     xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"
-    ID="%1"
+    IssueInstant="%s"
+    ID="%s"
     Version="2.0"
+    Destination="%s"
+    ProtocolBinding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
+   AssertionConsumerServiceURL="%s"
     AssertionConsumerServiceIndex="0"
     AttributeConsumingServiceIndex="0">
-    <saml:Issuer>URN:xx-xx-xx</saml:Issuer>
+    <saml:Issuer>%s</saml:Issuer>
     <samlp:NameIDPolicy
         AllowCreate="true"
         Format="urn:oasis:names:tc:SAML:2.0:nameid-format:transient"/>
 </samlp:AuthnRequest>
 AUTHREQ;
 
-    $saml = sprintf($authnRequestTemplate,uniqid());
-    $utf8 = utf8_encode($saml);
-    $base64 = base64_encode($utf8);
-   return $base64;
+    $saml = sprintf($authnRequestTemplate,gmdate("Y-m-d\TH:i:s\Z"),
+                        uniqid(),
+                        self::$config['SPID'],
+                        $config['AssertionConsumerService'],
+                        $config['AssertionConsumerService']
+) ;
+$utf8 = utf8_encode($saml);
+print $utf8;
+$compressed = gzdeflate($utf8,-1,ZLIB_ENCODING_RAW);
+$base64 = base64_encode($compressed);
+$urlencoded = urlencode($base64);
+   return $urlencoded;
 }
 
 
