@@ -51,7 +51,7 @@ if ($method != "POST"  && AUTO_INITIATE) {
             $("#sts_pre").html(sts_as_bash);
             break;
         case "json":
-            $("#sts_pre").html(sts_as_json);
+            $("#sts_pre").html(JSON.stringify(sts_as_json));
             break;
         case "saml":
             $("#sts_pre").html(saml);
@@ -131,7 +131,11 @@ $sts_as_bash = "export AWS_ACCESS_KEY_ID=" . $result['Credentials']['AccessKeyId
 $sts_as_bash = $sts_as_bash . "export AWS_SECRET_ACCESS_KEY=" . $result['Credentials']['SecretAccessKey'] . "\n";
 $sts_as_bash = $sts_as_bash . "export AWS_SECURITY_TOKEN=" . $result['Credentials']['SessionToken'] . "\n";
 
-$sts_as_json = json_encode($result['Credentials']['AccessKeyId'] );
+$sts_as_json = json_encode($result['Credentials'] );
+
+
+print	"<script>var sts_as_bash=\"". str_replace("\n",";",$sts_as_bash) . "\";</script>";
+print	"<script>var sts_as_json=". $sts_as_json . ";</script>";
 print	"<pre id=\"sts_pre\">";
 print   $sts_as_bash;
 print	"</pre>";
