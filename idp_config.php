@@ -5,7 +5,7 @@
 $xml = simplexml_load_file(IDP_METADATA) or print('Fatal Error: config file pointing to broken idp metadata');
 $md_ns = $xml->children('urn:oasis:names:tc:SAML:2.0:metadata');
 $location = $md_ns->IDPSSODescriptor->SingleSignOnService->attributes()->Location;
-define(IDP_SSO_URL,$location);
+define('IDP_SSO_URL',$location);
 
 function generateAuthnRequest() {
 # Note that this "unique id" does not need to be cryptographically

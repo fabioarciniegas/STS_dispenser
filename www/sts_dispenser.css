@@ -79,6 +79,10 @@ body {
   }
 }
 
+pre {
+    text-align: left;
+}
+
 .copyright {
   text-color: #777;
   font-size: 8px;

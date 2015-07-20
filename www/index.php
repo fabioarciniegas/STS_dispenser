@@ -48,13 +48,13 @@ if ($method != "POST"  && AUTO_INITIATE) {
 
         switch (f) {
         case "bash":
-            $("#sts_pre").html($sts_as_bash);
+            $("#sts_pre").html(sts_as_bash);
             break;
         case "json":
-            $("#sts_pre").html($sts_as_json);
+            $("#sts_pre").html(sts_as_json);
             break;
         case "saml":
-            $("#sts_pre").html($saml);
+            $("#sts_pre").html(saml);
             break;
         }
 
@@ -103,10 +103,13 @@ if ($method != "POST") {
     );
 
     print   "<h2>Your STS Token</h2>";
+
     $saml=$_POST['SAMLResponse'];
-    if(FullSAMLAssertionAndResponseAvailable == true){
-        print "<script>var IdP_assertion=${base64_decode($_POST['SAMLResponse'])}</script>";
-    }
+
+# TODO: Make saml response available for debug
+#    if(FullSAMLAssertionAndResponseAvailable == true){
+ #       print "<script>var IdP_assertion=${base64_decode($_POST['SAMLResponse'])}</script>";
+#    }
 $result = $client->assumeRoleWithSAML(array(
     // TODO: make role to assume variable, of course. May need to take it from the saml 
     // assertion that is coming from the IdP.
@@ -123,14 +126,16 @@ $current_time = time();
 $diff = round(($exp2 - $current_time)/60,2);
 print "<p class=\"lead\"> Will be valid until  ". $result['Credentials']['Expiration'] . "(". $diff ." minutes)"."	</p>";
 
-$sts_as_bash = "export AWS_ACCESS_KEY_ID=" . $result['Credentials']['AccessKeyId'] . "\n";
-$sts_as_bash += "export AWS_SECRET_ACCESS_KEY=" . $result['Credentials']['SecretAccessKey'] . "\n";
-$sts_as_bash += "export AWS_SECURITY_TOKEN=" . $result['Credentials']['SessionToken'] . "\n";
-print	"<pre id=\"sts_pre\">";
-    $sts_as_json = json_encode($result['Credentials']['AccessKeyId'] );
 
+$sts_as_bash = "export AWS_ACCESS_KEY_ID=" . $result['Credentials']['AccessKeyId'] . "\n";
+$sts_as_bash = $sts_as_bash . "export AWS_SECRET_ACCESS_KEY=" . $result['Credentials']['SecretAccessKey'] . "\n";
+$sts_as_bash = $sts_as_bash . "export AWS_SECURITY_TOKEN=" . $result['Credentials']['SessionToken'] . "\n";
+
+$sts_as_json = json_encode($result['Credentials']['AccessKeyId'] );
 print	"<pre id=\"sts_pre\">";
-//print $result;
+print   $sts_as_bash;
+print	"</pre>";
+
 $credentials = $result->get('Credentials');
 $session_token     = $credentials['SessionToken'];
 $access_key_id     = $credentials['AccessKeyId'];
@@ -143,13 +148,6 @@ $iam_client = IamClient::factory(array(
 	    'version' => '2010-05-08'
 	    ));
 
-// $iam_client = IamClient::factory(array( 
-//        'key' => $access_key_id,
-//        'secret' => $secret_access_key,
-//        'token' => $session_token,
-//        'region' => 'us-east-1',
-//        'version' => '2010-05-08'
-//        )); 
 
 $response = $iam_client->listPolicies(array('OnlyAttached' => true));
 //print "<br/>This token allows you to execute calls allowed by the policy " . $result['Credentials']['Expiration'] . "(". $diff ." minutes)";
