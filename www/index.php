@@ -1,5 +1,6 @@
 <?php 
 require("../config.php"); 
+require("../idp_config.php"); 
 require '../vendor/autoload.php';
 # TODO: check health of metadata 
 use Aws\Sts\StsClient;
@@ -12,9 +13,11 @@ use Aws\Iam\IamClient;
 
     <title>STS Token Dispenser</title>    
 <?php
+    $method = $_SERVER['REQUEST_METHOD'];
+
 if ($method != "POST"  && $config['AutoInitiateOnGET']) {
 ?>
-<meta http-equiv="refresh" content="3; URL='<?php echo $config['IdentityProviderSignInURL'];?>'" />
+<meta http-equiv="refresh" content="<?php echo  $config['RedirectDelay'];?>;URL='<?php echo $config['IdPSingleSignOnURL'];?>'" />
 <?php
 }
 ?>
@@ -84,20 +87,22 @@ if ($method != "POST"  && $config['AutoInitiateOnGET']) {
 <?php
 
 try {
-
-$client = StsClient::factory(array(
-    'region' => 'us-east-2',
-    'version' => 'latest')
-);
-
-$method = $_SERVER['REQUEST_METHOD'];
-
 if ($method != "POST") {
+
     print "To receive a token you must  authenticate.";
-# TODO: cosmetic improvement: customize whether the link is shown.
-   print "<div id=\"warn\" class=\"warning\">You are now being redirected to {$config['IdentityProviderDisplayName']}</div>";
+    if ($config['AutoInitiateOnGET']) {
+          print "<div id=\"warn\" class=\"warning\">You are now being redirected to <a href=\"{$config['IdPSingleSignOnURL']}?SAMLRequest=";
+            print generateAuthnRequest();
+       print "\">{$config['IdentityProviderDisplayName']}</a></div>";
+    }
 }
 else {
+
+    $client = StsClient::factory(array(
+        'region' => 'us-east-2',
+        'version' => 'latest')
+    );
+
     print   "<h2>Your STS Token</h2>";
     $saml=$_POST['SAMLResponse'];
     if($config['FullSAMLAssertionAndResponseAvailable'] == true){

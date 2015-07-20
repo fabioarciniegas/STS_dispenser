@@ -79,11 +79,7 @@ body {
   }
 }
 
-.warning {
-  color: #990000;
-}
-
 .copyright {
-  color: #777;
-  text-size: 4px;
+  text-color: #777;
+  font-size: 8px;
 }

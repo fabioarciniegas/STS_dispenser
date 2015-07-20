@@ -14,9 +14,15 @@ Install composer if you have not done so already:
 ```
 curl -sS https://getcomposer.org/installer | php
 ```
-install dependency libraries (aws libraries)
+
+install ext-curl and php SimpleXML(enabled by default in php5) if you haven't. Typically achieved through your favorite package manager. e.g.
 ```
-php composer.phar composer.json
+sudo apt-get install php5-curl
+```
+
+install dependency libraries (aws libraries etc. specified in composer.json)
+```
+php composer.phar install
 ```
 
 Make www directory available through webserver. e.g. point the document root of your virtual server in apache 2
@@ -39,3 +45,4 @@ This application acts as a SAML 2.0 Service Provider. For it to work,  it needs 
 
 
 =Fabio Arciniegas, Trend Micro 2015
+ 
