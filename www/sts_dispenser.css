@@ -40,7 +40,8 @@ body {
 .container-narrow > hr {
   margin: 30px 0;
 }
-
+/*TODO: logout content of different color*/
+/*TODO: gray-out copy-to-clipboard on fail*/
 /* Main marketing message and sign up button */
 .jumbotron {
   text-align: center;

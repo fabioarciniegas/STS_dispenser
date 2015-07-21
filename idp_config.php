@@ -4,10 +4,11 @@
 
 $xml = simplexml_load_file(IDP_METADATA) or print('Fatal Error: config file pointing to broken idp metadata');
 $md_ns = $xml->children('urn:oasis:names:tc:SAML:2.0:metadata');
-$location = $md_ns->IDPSSODescriptor->SingleSignOnService->attributes()->Location;
-define('IDP_SSO_URL',$location);
 
-function generateAuthnRequest() {
+define('IDP_SSO_URL',$md_ns->IDPSSODescriptor->SingleSignOnService->attributes()->Location);
+define('IDP_SLO_URL',$md_ns->IDPSSODescriptor->SingleLogoutService->attributes()->Location);
+
+function generateAuthnRequest($prevent_encoding = false) {
 # Note that this "unique id" does not need to be cryptographically
 # strong for the purposes of the request.  The purpose of this id is
 # to match that an eventual assertion posted to this SP is in
@@ -49,7 +50,13 @@ $utf8 = utf8_encode($saml);
 $compressed = gzdeflate($utf8,-1,ZLIB_ENCODING_RAW);
 $base64 = base64_encode($compressed);
 $urlencoded = urlencode($base64);
-   return $urlencoded;
+
+return $prevent_encoding ? $utf8 : $urlencoded;
+}
+
+function decodeSAMLResponse($response) {
+	 return base64_decode($response);
+#    return gzinflate(base64_decode(urldecode($response)));
 }
 
 

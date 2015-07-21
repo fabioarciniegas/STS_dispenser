@@ -53,8 +53,8 @@ if ($method != "POST"  && AUTO_INITIATE) {
         case "json":
             $("#sts_pre").html(JSON.stringify(sts_as_json));
             break;
-        case "saml":
-            $("#sts_pre").html(saml);
+        case "debug":
+            $("#sts_pre").html(sts_as_debug);
             break;
         }
 
@@ -70,14 +70,14 @@ if ($method != "POST"  && AUTO_INITIATE) {
           <ul class="nav nav-pills pull-right">
             <li id="bash" role="presentation" class="active"><a href="javascript:format_content('bash')">bash</a></li>
             <li id="json" role="presentation"><a href="javascript:format_content('json')">json</a></li>
-<?php if (FullSAMLAssertionAndResponseAvailable == true) { ?>
-<li id="saml" role="presentation"><a href="javascript:format_content('binary')">(debug)</a></li>
+<?php if (DEBUG_SAML == true) { ?>
+<li id="debug" role="presentation"><a href="javascript:format_content('debug')">(debug)</a></li>
 <?php } ?>
+<li id="logout" role="presentation"><a href="<?php echo IDP_SLO_URL; ?>">(logout)</a></li>
           </ul>
         </nav>
         <h3 class="text-muted">STS Dispenser</h3>
       </div>
-
       <div class="jumbotron">
 
 <!-- *************************************************
@@ -87,86 +87,83 @@ if ($method != "POST"  && AUTO_INITIATE) {
 <?php
 
 try {
-if ($method != "POST") {
-
+    if ($method != "POST") {
     print "To receive a token you must  authenticate.";
    $ls_template= "<div id=\"warn\" class=\"warning\">You are now being redirected to <a href=\"%s?SAMLRequest=%s\">%s</a></div>";
-
-    if (AUTO_INITIATE) {
+        if (AUTO_INITIATE) {
          print sprintf($ls_template,IDP_SSO_URL,generateAuthnRequest(),IDP_DISPLAY_NAME);
+        }
     }
-}
     else {
+    #TODO: config region
     $client = StsClient::factory(array(
+
         'region' => 'us-east-2',
-        'version' => 'latest')
-    );
+        'version' => 'latest'));
 
     print   "<h2>Your STS Token</h2>";
 
-    $saml=$_POST['SAMLResponse'];
+   $sts_as_debug=decodeSAMLResponse($_POST['SAMLResponse']);
 
 # TODO: Make saml response available for debug
 #    if(FullSAMLAssertionAndResponseAvailable == true){
- #       print "<script>var IdP_assertion=${base64_decode($_POST['SAMLResponse'])}</script>";
+#       print "<script>var $saml={base64_decode($_POST['SAMLResponse'])}</script>";
 #    }
-$result = $client->assumeRoleWithSAML(array(
-    // TODO: make role to assume variable, of course. May need to take it from the saml 
-    // assertion that is coming from the IdP.
+    $result = $client->assumeRoleWithSAML(array(
+#    // TODO: make role variable, of course. 
     'RoleArn' => 'arn:aws:iam::556247969450:role/STSasIdPAssume',
     'PrincipalArn' => 'arn:aws:iam::556247969450:saml-provider/STSTokenProvierAsIdP',
     'SAMLAssertion' => $_POST['SAMLResponse'],
 //    'Policy' => 'string',
     'DurationSeconds' => 3600,
-));
+              ));
 
-$exp = $result['Credentials']['Expiration'];
-$exp2 = strtotime($exp);
-$current_time = time();
-$diff = round(($exp2 - $current_time)/60,2);
-print "<p class=\"lead\"> Will be valid until  ". $result['Credentials']['Expiration'] . "(". $diff ." minutes)"."	</p>";
+     $exp = $result['Credentials']['Expiration'];
+     $exp2 = strtotime($exp);
+     $current_time = time();
+     $diff = round(($exp2 - $current_time)/60,2);
+     print "<p class=\"lead\"> Will be valid until  ". $result['Credentials']['Expiration'] . "(". $diff ." minutes)"."	</p>";
 
-
-$sts_as_bash = "export AWS_ACCESS_KEY_ID=" . $result['Credentials']['AccessKeyId'] . "\n";
-$sts_as_bash = $sts_as_bash . "export AWS_SECRET_ACCESS_KEY=" . $result['Credentials']['SecretAccessKey'] . "\n";
-$sts_as_bash = $sts_as_bash . "export AWS_SECURITY_TOKEN=" . $result['Credentials']['SessionToken'] . "\n";
-
-$sts_as_json = json_encode($result['Credentials'] );
+     $sts_as_bash = "export AWS_ACCESS_KEY_ID=" . $result['Credentials']['AccessKeyId'] . "\n";
+     $sts_as_bash = $sts_as_bash . "export AWS_SECRET_ACCESS_KEY=" . $result['Credentials']['SecretAccessKey'] . "\n";
+     $sts_as_bash = $sts_as_bash . "export AWS_SECURITY_TOKEN=" . $result['Credentials']['SessionToken'] . "\n";
+     $sts_as_json = json_encode($result['Credentials'] );
 
 
-print	"<script>var sts_as_bash=\"". str_replace("\n",";",$sts_as_bash) . "\";</script>";
-print	"<script>var sts_as_json=". $sts_as_json . ";</script>";
-print	"<pre id=\"sts_pre\">";
-print   $sts_as_bash;
-print	"</pre>";
+     
 
-$credentials = $result->get('Credentials');
-$session_token     = $credentials['SessionToken'];
-$access_key_id     = $credentials['AccessKeyId'];
-$secret_access_key = $credentials['SecretAccessKey'];
-
-$credentials_obj = $client->createCredentials($result);
-$iam_client = IamClient::factory(array( 
-	    'credentials' => $credentials_obj,
-            'region' => 'us-east-1',
-	    'version' => '2010-05-08'
-	    ));
+     print	"<script>var sts_as_bash=\"". str_replace("\n",";",$sts_as_bash) . "\";</script>";
+#TODO: verify output is complete (chrome)
+     print	"<script>var sts_as_json=". $sts_as_json . ";</script>";
+     print	"<script>var sts_as_debug=\"". str_replace("\n"," ",htmlspecialchars($sts_as_debug)) . "\";</script>";
 
 
-$response = $iam_client->listPolicies(array('OnlyAttached' => true));
+     print	"<pre id=\"sts_pre\">";
+     print   $sts_as_bash;
+     print	"</pre>";
+
+// $credentials = $result->get('Credentials');
+// $session_token     = $credentials['SessionToken'];
+// $access_key_id     = $credentials['AccessKeyId'];
+// $secret_access_key = $credentials['SecretAccessKey'];
+
+// #$credentials_obj = $client->createCredentials($result);
+// $iam_client = IamClient::factory(array( 
+// 	    'credentials' => $credentials_obj,
+//         'region' => 'us-east-1',
+// 	    'version' => '2010-05-08'
+// 	    ));
+
+
+// $response = $iam_client->listPolicies(array('OnlyAttached' => true));
 //print "<br/>This token allows you to execute calls allowed by the policy " . $result['Credentials']['Expiration'] . "(". $diff ." minutes)";
 }
-
-} catch (Exception $e) {
-
-//print $e;
-   print "<br/><br/> If you have trouble reloading this page.  <a href=\"https://ec2-52-4-120-194.compute-1.amazonaws.com/saml/module.php/saml/disco.php?entityID=https%3A%2F%2Fec2-52-4-120-194.compute-1.amazonaws.com%2Fsaml%2Fmodule.php%2Fsaml%2Fsp%2Fmetadata.php%2FSTSDispenser-SP&return=https%3A%2F%2Fec2-52-4-120-194.compute-1.amazonaws.com%2Fsaml%2Fmodule.php%2Fsaml%2Fsp%2Fdiscoresp.php%3FAuthID%3D_e6c6daf549e961f61680f96a8d604e308124f4df4a%253Ahttps%253A%252F%252Fec2-52-4-120-194.compute-1.amazonaws.com%252Fsaml%252Fmodule.php%252Fcore%252Fas_login.php%253FAuthId%253DSTSDispenser-SP%2526ReturnTo%253Dhttps%25253A%25252F%25252Fec2-52-4-120-194.compute-1.amazonaws.com%25252Fsaml%25252Fmodule.php%25252Fcore%25252Fauthenticate.php%25253Fas%25253DSTSDispenser-SP&returnIDParam=idpentityid\">Start at your Identity Provider.</a>";
-   exit();
-
+} catch (\Aws\Sts\Exception\ExpiredTokenException $e) {
+    print "has expired. Note that an STS ticket must be redeemed within 5 minutes of issuance.<br/>";
+   $ls_template= "<div id=\"warn\" class=\"warning\">Click on this link to <a href=\"%s?SAMLRequest=%s\">%s</a> to receive a new one.</div>";
+   print sprintf($ls_template,IDP_SSO_URL,generateAuthnRequest(),IDP_DISPLAY_NAME);
 }
-
 ?>
-
 	</pre>
 
 <?php
@@ -225,3 +222,4 @@ AWS federation is commonly understood as loggin in to AWS console by authenticat
 
   </body>
 </html>
+ 
