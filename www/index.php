@@ -110,6 +110,7 @@ try {
 #       print "<script>var $saml={base64_decode($_POST['SAMLResponse'])}</script>";
 #    }
     $result = $client->assumeRoleWithSAML(array(
+
 #    // TODO: make role variable, of course. 
     'RoleArn' => 'arn:aws:iam::556247969450:role/STSasIdPAssume',
     'PrincipalArn' => 'arn:aws:iam::556247969450:saml-provider/STSTokenProvierAsIdP',
@@ -130,13 +131,11 @@ try {
      $sts_as_json = json_encode($result['Credentials'] );
 
 
-     
-
      print	"<script>var sts_as_bash=\"". str_replace("\n",";",$sts_as_bash) . "\";</script>";
+
 #TODO: verify output is complete (chrome)
      print	"<script>var sts_as_json=". $sts_as_json . ";</script>";
      print	"<script>var sts_as_debug=\"". str_replace("\n"," ",htmlspecialchars($sts_as_debug)) . "\";</script>";
-
 
      print	"<pre id=\"sts_pre\">";
      print   $sts_as_bash;
@@ -158,6 +157,7 @@ try {
 // $response = $iam_client->listPolicies(array('OnlyAttached' => true));
 //print "<br/>This token allows you to execute calls allowed by the policy " . $result['Credentials']['Expiration'] . "(". $diff ." minutes)";
 }
+
 } catch (\Aws\Sts\Exception\ExpiredTokenException $e) {
     print "has expired. Note that an STS ticket must be redeemed within 5 minutes of issuance.<br/>";
    $ls_template= "<div id=\"warn\" class=\"warning\">Click on this link to <a href=\"%s?SAMLRequest=%s\">%s</a> to receive a new one.</div>";
@@ -222,4 +222,3 @@ AWS federation is commonly understood as loggin in to AWS console by authenticat
 
   </body>
 </html>
- 

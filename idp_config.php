@@ -56,7 +56,6 @@ return $prevent_encoding ? $utf8 : $urlencoded;
 
 function decodeSAMLResponse($response) {
 	 return base64_decode($response);
-#    return gzinflate(base64_decode(urldecode($response)));
 }
 
 
