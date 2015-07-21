@@ -53,8 +53,8 @@ if ($method != "POST"  && AUTO_INITIATE) {
         case "json":
             $("#sts_pre").html(JSON.stringify(sts_as_json));
             break;
-        case "binary":
-            $("#sts_pre").html(saml);
+        case "debug":
+            $("#sts_pre").html(sts_as_debug);
             break;
         }
 
@@ -71,7 +71,7 @@ if ($method != "POST"  && AUTO_INITIATE) {
             <li id="bash" role="presentation" class="active"><a href="javascript:format_content('bash')">bash</a></li>
             <li id="json" role="presentation"><a href="javascript:format_content('json')">json</a></li>
 <?php if (DEBUG_SAML == true) { ?>
-<li id="saml" role="presentation"><a href="javascript:format_content('saml')">(debug)</a></li>
+<li id="debug" role="presentation"><a href="javascript:format_content('debug')">(debug)</a></li>
 <?php } ?>
           </ul>
         </nav>
@@ -126,11 +126,16 @@ try {
      $sts_as_bash = "export AWS_ACCESS_KEY_ID=" . $result['Credentials']['AccessKeyId'] . "\n";
      $sts_as_bash = $sts_as_bash . "export AWS_SECRET_ACCESS_KEY=" . $result['Credentials']['SecretAccessKey'] . "\n";
      $sts_as_bash = $sts_as_bash . "export AWS_SECURITY_TOKEN=" . $result['Credentials']['SessionToken'] . "\n";
-
      $sts_as_json = json_encode($result['Credentials'] );
+
+
+     
 
      print	"<script>var sts_as_bash=\"". str_replace("\n",";",$sts_as_bash) . "\";</script>";
      print	"<script>var sts_as_json=". $sts_as_json . ";</script>";
+     print	"<script>var sts_as_debug=". $sts_as_json . ";</script>";
+
+
      print	"<pre id=\"sts_pre\">";
      print   $sts_as_bash;
      print	"</pre>";
@@ -153,15 +158,9 @@ try {
 }
 
 } catch (\Aws\Sts\Exception\ExpiredTokenException $e) {
-    print "has expired. Note that you must be redeemed within 5 minutes of issuance.<br/>";
+    print "has expired. Note that an STS ticket must be redeemed within 5 minutes of issuance.<br/>";
    $ls_template= "<div id=\"warn\" class=\"warning\">Click on this link to <a href=\"%s?SAMLRequest=%s\">%s</a> to receive a new one.</div>";
    print sprintf($ls_template,IDP_SSO_URL,generateAuthnRequest(),IDP_DISPLAY_NAME);
-
-
-
-#print $e;
-#   print "<br/><br/> If you have trouble reloading this page.  <a href=\"https://ec2-52-4-120-194.compute-1.amazonaws.com/saml/module.php/saml/disco.php?entityID=https%3A%2F%2Fec2-52-4-120-194.compute-1.amazonaws.com%2Fsaml%2Fmodule.php%2Fsaml%2Fsp%2Fmetadata.php%2FSTSDispenser-SP&return=https%3A%2F%2Fec2-52-4-120-194.compute-1.amazonaws.com%2Fsaml%2Fmodule.php%2Fsaml%2Fsp%2Fdiscoresp.php%3FAuthID%3D_e6c6daf549e961f61680f96a8d604e308124f4df4a%253Ahttps%253A%252F%252Fec2-52-4-120-194.compute-1.amazonaws.com%252Fsaml%252Fmodule.php%252Fcore%252Fas_login.php%253FAuthId%253DSTSDispenser-SP%2526ReturnTo%253Dhttps%25253A%25252F%25252Fec2-52-4-120-194.compute-1.amazonaws.com%25252Fsaml%25252Fmodule.php%25252Fcore%25252Fauthenticate.php%25253Fas%25253DSTSDispenser-SP&returnIDParam=idpentityid\">Start at your Identity Provider.</a>";
-#   exit();
 
 }
 ?>
