@@ -52,6 +52,12 @@ body {
   font-size: 21px;
 }
 
+.gray {
+#    visibility: hidden;
+    text-color: #777;
+    text-decoration: line-through;    
+}
+
 /* Supporting marketing content */
 .marketing {
   margin: 40px 0;

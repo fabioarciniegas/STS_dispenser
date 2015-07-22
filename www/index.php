@@ -57,12 +57,23 @@ if ($method != "POST"  && AUTO_INITIATE) {
             $("#sts_pre").html(sts_as_debug);
             break;
         }
-
 }
+    function adjust_ui_to_result(){
+	if(typeof valid_token_acquired == 'undefined') {
+         	$("#greeting").addClass( "gray");
+                $("#button_text").removeClass( "btn");
+                $("#button_text").removeClass( "btn-success");
+                $("#button_text").addClass( "btn-warning");
+        }
+        else{
+	    format_content('bash');
+        }
+     }
+
     </script>
   </head>
 
-  <body>
+  <body onload="adjust_ui_to_result()">
 
     <div class="container">
       <div class="header clearfix">
@@ -71,15 +82,20 @@ if ($method != "POST"  && AUTO_INITIATE) {
             <li id="bash" role="presentation" class="active"><a href="javascript:format_content('bash')">bash</a></li>
             <li id="json" role="presentation"><a href="javascript:format_content('json')">json</a></li>
 <?php if (DEBUG_SAML == true) { ?>
-<li id="debug" role="presentation"><a href="javascript:format_content('debug')">(debug)</a></li>
+<li id="debug" role="presentation"><a href="javascript:format_content('debug')">saml</a></li>
 <?php } ?>
+<?php if (PRESENT_LOGOUT == true) { ?>
 <li id="logout" role="presentation"><a href="<?php echo IDP_SLO_URL; ?>">(logout)</a></li>
+<?php } ?>
           </ul>
         </nav>
         <h3 class="text-muted">STS Dispenser</h3>
       </div>
       <div class="jumbotron">
+          <h2 id="greeting">Your STS Token</h2>
 
+
+      <pre id="sts_pre"></pre>
 <!-- *************************************************
      STS LOGIC
      ************************************************* -->
@@ -97,23 +113,38 @@ try {
     else {
     #TODO: config region
     $client = StsClient::factory(array(
-
         'region' => 'us-east-2',
         'version' => 'latest'));
 
-    print   "<h2>Your STS Token</h2>";
+#TODO check that the response contains a SAMLRESPONSE first
+    $assertion = decodeSAMLResponse($_POST['SAMLResponse']);
 
-   $sts_as_debug=decodeSAMLResponse($_POST['SAMLResponse']);
+    $assertion_xml = simplexml_load_string($assertion);
+    $sts_as_debug= $assertion; 
+    print	"<script>var sts_as_debug=\"". str_replace("\n"," ",htmlspecialchars($assertion)) . "\";</script>";
 
-# TODO: Make saml response available for debug
-#    if(FullSAMLAssertionAndResponseAvailable == true){
-#       print "<script>var $saml={base64_decode($_POST['SAMLResponse'])}</script>";
-#    }
+    if($assertion_xml == false){
+         throw new Exception("Malformed response received. This is likely a problem in the IdP.<br/>You can turn on debug to examine the response but it is not likely to be something you can fix at this end of the federation.");
+    }
+    $saml_ns = $assertion_xml->children('urn:oasis:names:tc:SAML:2.0:assertion');
+#    print htmlspecialchars($saml_ns->asXML());
+#    $role_arn = $saml_ns->Assertion->AttributeStatement->Attribute;
+#     $role_arn = $saml_ns->Assertion->AttributeStatement->Attribute->xpath('.[@Name=\"https://aws.amazon.com/SAML/Attributes/Role\"]');
+    $saml_ns->registerXPathNamespace ('s','urn:oasis:names:tc:SAML:2.0:assertion');
+    $assertion_roles = $saml_ns->xpath('//s:Assertion/s:AttributeStatement/s:Attribute[@Name=\'https://aws.amazon.com/SAML/Attributes/Role\']/s:AttributeValue');
+    $user_id = $saml_ns->xpath('//s:Assertion/s:AttributeStatement/s:Attribute[@Name=\'uid\']/s:AttributeValue');
+#TODO check that values were actually properly parsed out
+#    $role_arn = $saml_ns->xpath('/Assertion/AttributeStatement/Attribute[@Name=\"https://aws.amazon.com/SAML/Attributes/Role\"]');
+    $roles = array();
+    foreach ($assertion_roles as $r){
+      $pieces = explode(",",$r);
+      $roles[$pieces[0]]=$pieces[1];
+}
+
     $result = $client->assumeRoleWithSAML(array(
-
-#    // TODO: make role variable, of course. 
-    'RoleArn' => 'arn:aws:iam::556247969450:role/STSasIdPAssume',
-    'PrincipalArn' => 'arn:aws:iam::556247969450:saml-provider/STSTokenProvierAsIdP',
+#    // TODO: support multiple roles on dropdown, of course. 
+    'RoleArn' => array_keys($roles)[0],
+    'PrincipalArn' => $roles[array_keys($roles)[0]],
     'SAMLAssertion' => $_POST['SAMLResponse'],
 //    'Policy' => 'string',
     'DurationSeconds' => 3600,
@@ -137,9 +168,9 @@ try {
      print	"<script>var sts_as_json=". $sts_as_json . ";</script>";
      print	"<script>var sts_as_debug=\"". str_replace("\n"," ",htmlspecialchars($sts_as_debug)) . "\";</script>";
 
-     print	"<pre id=\"sts_pre\">";
-     print   $sts_as_bash;
-     print	"</pre>";
+
+
+
 
 // $credentials = $result->get('Credentials');
 // $session_token     = $credentials['SessionToken'];
@@ -153,15 +184,18 @@ try {
 // 	    'version' => '2010-05-08'
 // 	    ));
 
-
+     print	"<script>var valid_token_acquired=true;</script>";
 // $response = $iam_client->listPolicies(array('OnlyAttached' => true));
 //print "<br/>This token allows you to execute calls allowed by the policy " . $result['Credentials']['Expiration'] . "(". $diff ." minutes)";
 }
 
 } catch (\Aws\Sts\Exception\ExpiredTokenException $e) {
-    print "has expired. Note that an STS ticket must be redeemed within 5 minutes of issuance.<br/>";
+    print "Token expired. Note that an STS ticket must be redeemed within 5 minutes of issuance.<br/>";
    $ls_template= "<div id=\"warn\" class=\"warning\">Click on this link to <a href=\"%s?SAMLRequest=%s\">%s</a> to receive a new one.</div>";
    print sprintf($ls_template,IDP_SSO_URL,generateAuthnRequest(),IDP_DISPLAY_NAME);
+}
+catch (Exception $e) {
+    print $e->getMessage();
 }
 ?>
 	</pre>
