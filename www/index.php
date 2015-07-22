@@ -48,13 +48,13 @@ if ($method != "POST"  && AUTO_INITIATE) {
 
         switch (f) {
         case "bash":
-            $("#sts_pre").html(sts_as_bash);
+            $("#sts_pre").html(sts_as_bash[Object.keys(sts_as_bash)[0]]);
             break;
         case "json":
-            $("#sts_pre").html(JSON.stringify(sts_as_json));
+            $("#sts_pre").html(JSON.stringify(sts_as_json[Object.keys(sts_as_bash)[0]]));
             break;
         case "debug":
-            $("#sts_pre").html(sts_as_debug);
+            $("#sts_pre").html(sts_as_debug[Object.keys(sts_as_bash)[0]]);
             break;
         }
 }
@@ -70,6 +70,9 @@ if ($method != "POST"  && AUTO_INITIATE) {
         }
      }
 
+      var sts_as_json =[];
+      var sts_as_bash =[];
+      var sts_as_debug =[];
     </script>
   </head>
 
@@ -111,82 +114,62 @@ try {
         }
     }
     else {
-    #TODO: config region
     $client = StsClient::factory(array(
-        'region' => 'us-east-2',
-        'version' => 'latest'));
+             'region' => STS_CLIENT_REGION,
+             'version' => 'latest'));
 
-#TODO check that the response contains a SAMLRESPONSE first
+     #TODO check that the response contains a SAMLRESPONSE 
     $assertion = decodeSAMLResponse($_POST['SAMLResponse']);
+    if(READ_RESPONSE_FILE_INSTEAD){
+         $assertion = file_get_contents("response.xml");
+    }
 
     $assertion_xml = simplexml_load_string($assertion);
-    $sts_as_debug= $assertion; 
-    print	"<script>var sts_as_debug=\"". str_replace("\n"," ",htmlspecialchars($assertion)) . "\";</script>";
+    $sts_as_debug['__raw_idp_assertion__']= $assertion; 
+    print	"<script>var sts_as_debug['__raw_idp_assertion__']=\"". str_replace("\n"," ",htmlspecialchars($sts_as_debug['__raw_idp_assertion__'])) . "\";</script>";
 
     if($assertion_xml == false){
          throw new Exception("Malformed response received. This is likely a problem in the IdP.<br/>You can turn on debug to examine the response but it is not likely to be something you can fix at this end of the federation.");
     }
     $saml_ns = $assertion_xml->children('urn:oasis:names:tc:SAML:2.0:assertion');
-#    print htmlspecialchars($saml_ns->asXML());
-#    $role_arn = $saml_ns->Assertion->AttributeStatement->Attribute;
-#     $role_arn = $saml_ns->Assertion->AttributeStatement->Attribute->xpath('.[@Name=\"https://aws.amazon.com/SAML/Attributes/Role\"]');
     $saml_ns->registerXPathNamespace ('s','urn:oasis:names:tc:SAML:2.0:assertion');
     $assertion_roles = $saml_ns->xpath('//s:Assertion/s:AttributeStatement/s:Attribute[@Name=\'https://aws.amazon.com/SAML/Attributes/Role\']/s:AttributeValue');
     $user_id = $saml_ns->xpath('//s:Assertion/s:AttributeStatement/s:Attribute[@Name=\'uid\']/s:AttributeValue');
-#TODO check that values were actually properly parsed out
-#    $role_arn = $saml_ns->xpath('/Assertion/AttributeStatement/Attribute[@Name=\"https://aws.amazon.com/SAML/Attributes/Role\"]');
     $roles = array();
+
+
     foreach ($assertion_roles as $r){
       $pieces = explode(",",$r);
       $roles[$pieces[0]]=$pieces[1];
-}
+      $short_role = after_last("/",$pieces[0]);
 
-    $result = $client->assumeRoleWithSAML(array(
-#    // TODO: support multiple roles on dropdown, of course. 
-    'RoleArn' => array_keys($roles)[0],
-    'PrincipalArn' => $roles[array_keys($roles)[0]],
-    'SAMLAssertion' => $_POST['SAMLResponse'],
-//    'Policy' => 'string',
-    'DurationSeconds' => 3600,
-              ));
+      $result[$short_role] = $client->assumeRoleWithSAML(array(
+                                      'RoleArn' => $pieces[0],
+                                       'PrincipalArn' => $pieces[1],
+                                       'SAMLAssertion' => $assertion;
+                                        //    'Policy' => 'further_restrictions_if_desired',
+                                       'DurationSeconds' => 3600));
 
-     $exp = $result['Credentials']['Expiration'];
-     $exp2 = strtotime($exp);
-     $current_time = time();
-     $diff = round(($exp2 - $current_time)/60,2);
-     print "<p class=\"lead\"> Will be valid until  ". $result['Credentials']['Expiration'] . "(". $diff ." minutes)"."	</p>";
+     // $exp = $result[$short_role]['Credentials']['Expiration'];
+     // $exp2 = strtotime($exp);
+     // $current_time = time();
+     // $diff = round(($exp2 - $current_time)/60,2);
+     // print "<p class=\"lead\"> Will be valid until  {$exp} ( ${$diff}  minutes)</p>";
 
-     $sts_as_bash = "export AWS_ACCESS_KEY_ID=" . $result['Credentials']['AccessKeyId'] . "\n";
-     $sts_as_bash = $sts_as_bash . "export AWS_SECRET_ACCESS_KEY=" . $result['Credentials']['SecretAccessKey'] . "\n";
-     $sts_as_bash = $sts_as_bash . "export AWS_SECURITY_TOKEN=" . $result['Credentials']['SessionToken'] . "\n";
-     $sts_as_json = json_encode($result['Credentials'] );
+     $sts_as_bash[$short_role] = "export AWS_ACCESS_KEY_ID=" . $result['Credentials']['AccessKeyId'] . "\n";
+     $sts_as_bash[$short_role] = $sts_as_bash[$short_role] . "export AWS_SECRET_ACCESS_KEY=" . $result['Credentials']['SecretAccessKey'] . "\n";
+     $sts_as_bash[$short_role] = $sts_as_bash[$short_role] . "export AWS_SECURITY_TOKEN=" . $result['Credentials']['SessionToken'] . "\n";
+     $sts_as_json[$short_role] = json_encode[$short_role]($result['Credentials'] );
+     $sts_as_debug[$short_role]= $result; 
 
+     print	"<script>sts_as_bash[\"{$short_role}\"]=\"". str_replace("\n",";",$sts_as_bash[$short_role]) . "\";</script>";
+     print	"<script>sts_as_json[\"{$short_role}\"]=". $sts_as_json[$short_role] . ";</script>";
+     print	"<script>sts_as_debug[\"{$short_role}\"]=\"". str_replace("\n"," ",htmlspecialchars($sts_as_debug)) . "\";</script>";
 
-     print	"<script>var sts_as_bash=\"". str_replace("\n",";",$sts_as_bash) . "\";</script>";
+    }
 
-#TODO: verify output is complete (chrome)
-     print	"<script>var sts_as_json=". $sts_as_json . ";</script>";
-     print	"<script>var sts_as_debug=\"". str_replace("\n"," ",htmlspecialchars($sts_as_debug)) . "\";</script>";
-
-
-
-
-
-// $credentials = $result->get('Credentials');
-// $session_token     = $credentials['SessionToken'];
-// $access_key_id     = $credentials['AccessKeyId'];
-// $secret_access_key = $credentials['SecretAccessKey'];
-
-// #$credentials_obj = $client->createCredentials($result);
-// $iam_client = IamClient::factory(array( 
-// 	    'credentials' => $credentials_obj,
-//         'region' => 'us-east-1',
-// 	    'version' => '2010-05-08'
-// 	    ));
 
      print	"<script>var valid_token_acquired=true;</script>";
-// $response = $iam_client->listPolicies(array('OnlyAttached' => true));
-//print "<br/>This token allows you to execute calls allowed by the policy " . $result['Credentials']['Expiration'] . "(". $diff ." minutes)";
 }
 
 } catch (\Aws\Sts\Exception\ExpiredTokenException $e) {
@@ -237,6 +220,10 @@ AWS federation is commonly understood as loggin in to AWS console by authenticat
 
           <h4>Usage Demo video</h4>
           <p>You can watch a simple demo video here. For more detailed information on implementation and configuration see the help page.</p>
+
+          <h4>Can the Token last longer?</h4>
+          <p>No. This is a hard limit set by amazon. Good news is you don't need to re-type your credentials in your IdP. As long as you are logged in your iDP you can just refresh this page and get a new token.</p>
+
 
           <h4>Quick Configuration</h4>
           <p>Add this <a href="metadata.xml">metadata</a> to your ADFS or similar iDP to add the STS Dispenser as a service provider</p>. For more see the documentation folder.</p>

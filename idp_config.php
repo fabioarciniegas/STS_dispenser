@@ -58,5 +58,10 @@ function decodeSAMLResponse($response) {
 	 return base64_decode($response);
 }
 
+function after_last ($this, $inthat)
+{
+   if (!is_bool(strrevpos($inthat, $this)))
+   return substr($inthat, strrevpos($inthat, $this)+strlen($this));
+}
 
 ?>
