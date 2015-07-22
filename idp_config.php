@@ -8,6 +8,7 @@ $md_ns = $xml->children('urn:oasis:names:tc:SAML:2.0:metadata');
 define('IDP_SSO_URL',$md_ns->IDPSSODescriptor->SingleSignOnService->attributes()->Location);
 define('IDP_SLO_URL',$md_ns->IDPSSODescriptor->SingleLogoutService->attributes()->Location);
 
+
 function generateAuthnRequest($prevent_encoding = false) {
 # Note that this "unique id" does not need to be cryptographically
 # strong for the purposes of the request.  The purpose of this id is
@@ -44,7 +45,7 @@ AUTHREQ;
                         uniqid(),
                         SP_ID,
                         SP_ID,
-                        SP_ID
+                        SP_ID			
 ) ;
 $utf8 = utf8_encode($saml);
 $compressed = gzdeflate($utf8,-1,ZLIB_ENCODING_RAW);
@@ -57,6 +58,14 @@ return $prevent_encoding ? $utf8 : $urlencoded;
 function decodeSAMLResponse($response) {
 	 return base64_decode($response);
 }
+
+// use strrevpos function in case your php version does not include it
+function strrevpos($instr, $needle)
+{
+    $rev_pos = strpos (strrev($instr), strrev($needle));
+    if ($rev_pos===false) return false;
+    else return strlen($instr) - $rev_pos - strlen($needle);
+};
 
 function after_last ($this, $inthat)
 {

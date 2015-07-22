@@ -146,9 +146,10 @@ try {
       $result[$short_role] = $client->assumeRoleWithSAML(array(
                                       'RoleArn' => $pieces[0],
                                        'PrincipalArn' => $pieces[1],
-                                       'SAMLAssertion' => $assertion;
+                                       'SAMLAssertion' => $_POST['SAMLResponse'],
                                         //    'Policy' => 'further_restrictions_if_desired',
                                        'DurationSeconds' => 3600));
+
 
      // $exp = $result[$short_role]['Credentials']['Expiration'];
      // $exp2 = strtotime($exp);
@@ -156,15 +157,15 @@ try {
      // $diff = round(($exp2 - $current_time)/60,2);
      // print "<p class=\"lead\"> Will be valid until  {$exp} ( ${$diff}  minutes)</p>";
 
-     $sts_as_bash[$short_role] = "export AWS_ACCESS_KEY_ID=" . $result['Credentials']['AccessKeyId'] . "\n";
-     $sts_as_bash[$short_role] = $sts_as_bash[$short_role] . "export AWS_SECRET_ACCESS_KEY=" . $result['Credentials']['SecretAccessKey'] . "\n";
-     $sts_as_bash[$short_role] = $sts_as_bash[$short_role] . "export AWS_SECURITY_TOKEN=" . $result['Credentials']['SessionToken'] . "\n";
-     $sts_as_json[$short_role] = json_encode[$short_role]($result['Credentials'] );
-     $sts_as_debug[$short_role]= $result; 
+     $sts_as_bash[$short_role] = "export AWS_ACCESS_KEY_ID=" . $result[$short_role]['Credentials']['AccessKeyId'] . "\n";
+     $sts_as_bash[$short_role] = $sts_as_bash[$short_role] . "export AWS_SECRET_ACCESS_KEY=" . $result[$short_role]['Credentials']['SecretAccessKey'] . "\n";
+     $sts_as_bash[$short_role] = $sts_as_bash[$short_role] . "export AWS_SECURITY_TOKEN=" . $result[$short_role]['Credentials']['SessionToken'] . "\n";
+     $sts_as_json[$short_role] = json_encode($result[$short_role]['Credentials'] );
+     $sts_as_debug[$short_role]= $result[$short_role]; 
 
      print	"<script>sts_as_bash[\"{$short_role}\"]=\"". str_replace("\n",";",$sts_as_bash[$short_role]) . "\";</script>";
      print	"<script>sts_as_json[\"{$short_role}\"]=". $sts_as_json[$short_role] . ";</script>";
-     print	"<script>sts_as_debug[\"{$short_role}\"]=\"". str_replace("\n"," ",htmlspecialchars($sts_as_debug)) . "\";</script>";
+     print	"<script>sts_as_debug[\"{$short_role}\"]=\"". str_replace("\n"," ",htmlspecialchars($sts_as_debug[$short_role])) . "\";</script>";
 
     }
 
