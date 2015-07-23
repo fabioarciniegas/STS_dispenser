@@ -1,6 +1,6 @@
 /* Space out content a bit */
 body {
-  padding-top: 20px;
+  padding-top: 15px;
   padding-bottom: 20px;
 }
 
@@ -49,7 +49,7 @@ body {
 }
 .jumbotron .btn {
   padding: 14px 24px;
-  font-size: 21px;
+  font-size: 20px;
 }
 
 .gray {
@@ -74,7 +74,7 @@ body {
   .footer {
     padding-right: 0;
     padding-left: 0;
-    font-size: 8px;
+    font-size: 14px;
   }
   /* Space out the masthead */
   .header {
@@ -90,7 +90,13 @@ pre {
     text-align: left;
 }
 
+.terminal {
+    text-color: #00FFFF;
+    bg-color: #000000;
+}
+
 .copyright {
   text-color: #777;
-  font-size: 8px;
+  font-size: 18px;
 }
+

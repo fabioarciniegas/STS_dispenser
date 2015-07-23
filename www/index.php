@@ -13,6 +13,7 @@ use Aws\Iam\IamClient;
 
     <title>STS Token Dispenser</title>    
 <?php
+     $token_acquired = false;
     $method = $_SERVER['REQUEST_METHOD'];
 
 if ($method != "POST"  && AUTO_INITIATE) {
@@ -41,23 +42,37 @@ if ($method != "POST"  && AUTO_INITIATE) {
     <![endif]-->
 
     <script>
-      var sts = "(no token available)";                                                                  
-      function format_content(f){
+
+      var sts = "(no token available)";                                                  var current_format = 'none'
+      var current_role  = 'none';                      
+
+      function format_content(f,r){
+	if(f == null){      	f = current_format;	}
+	if(r == null){      	r = current_role;	}
+
         $( "li[class|=active]" ).removeClass( "active" );
         var li = $( "#"+f ).addClass( "active" );
 
+
+        $( "#button_"+current_role ).removeClass( "active" );
+        $( "#button_"+r ).addClass( "active" );
+
+
+
         switch (f) {
         case "bash":
-            $("#sts_pre").html(sts_as_bash[Object.keys(sts_as_bash)[0]]);
+            $("#sts_pre").html(sts_as_bash[r]);
             break;
         case "json":
-            $("#sts_pre").html(JSON.stringify(sts_as_json[Object.keys(sts_as_bash)[0]]));
+            $("#sts_pre").html(JSON.stringify(sts_as_json[r]));
             break;
         case "debug":
-            $("#sts_pre").html(sts_as_debug[Object.keys(sts_as_bash)[0]]);
+            $("#sts_pre").html(sts_as_debug['__raw_idp_assertion__']);
             break;
         }
-}
+        current_format = f;
+        current_role = r;
+    }
     function adjust_ui_to_result(){
 	if(typeof valid_token_acquired == 'undefined') {
          	$("#greeting").addClass( "gray");
@@ -66,7 +81,7 @@ if ($method != "POST"  && AUTO_INITIATE) {
                 $("#button_text").addClass( "btn-warning");
         }
         else{
-	    format_content('bash');
+	    format_content(null,null);
         }
      }
 
@@ -82,10 +97,10 @@ if ($method != "POST"  && AUTO_INITIATE) {
       <div class="header clearfix">
         <nav>
           <ul class="nav nav-pills pull-right">
-            <li id="bash" role="presentation" class="active"><a href="javascript:format_content('bash')">bash</a></li>
-            <li id="json" role="presentation"><a href="javascript:format_content('json')">json</a></li>
+            <li id="bash" role="presentation" class="active"><a href="javascript:format_content('bash',null)">bash</a></li>
+            <li id="json" role="presentation"><a href="javascript:format_content('json',null)">json</a></li>
 <?php if (DEBUG_SAML == true) { ?>
-<li id="debug" role="presentation"><a href="javascript:format_content('debug')">saml</a></li>
+<li id="debug" role="presentation"><a href="javascript:format_content('debug',null)">saml</a></li>
 <?php } ?>
 <?php if (PRESENT_LOGOUT == true) { ?>
 <li id="logout" role="presentation"><a href="<?php echo IDP_SLO_URL; ?>">(logout)</a></li>
@@ -94,17 +109,14 @@ if ($method != "POST"  && AUTO_INITIATE) {
         </nav>
         <h3 class="text-muted">STS Dispenser</h3>
       </div>
+
       <div class="jumbotron">
           <h2 id="greeting">Your STS Token</h2>
-
-
       <pre id="sts_pre"></pre>
 <!-- *************************************************
      STS LOGIC
      ************************************************* -->
-
 <?php
-
 try {
     if ($method != "POST") {
     print "To receive a token you must  authenticate.";
@@ -118,7 +130,6 @@ try {
              'region' => STS_CLIENT_REGION,
              'version' => 'latest'));
 
-     #TODO check that the response contains a SAMLRESPONSE 
     $assertion = decodeSAMLResponse($_POST['SAMLResponse']);
     if(READ_RESPONSE_FILE_INSTEAD){
          $assertion = file_get_contents("response.xml");
@@ -126,7 +137,7 @@ try {
 
     $assertion_xml = simplexml_load_string($assertion);
     $sts_as_debug['__raw_idp_assertion__']= $assertion; 
-    print	"<script>var sts_as_debug['__raw_idp_assertion__']=\"". str_replace("\n"," ",htmlspecialchars($sts_as_debug['__raw_idp_assertion__'])) . "\";</script>";
+    print	"<script>sts_as_debug['__raw_idp_assertion__']=\"". str_replace("\n"," ",htmlspecialchars($sts_as_debug['__raw_idp_assertion__'])) . "\";</script>";
 
     if($assertion_xml == false){
          throw new Exception("Malformed response received. This is likely a problem in the IdP.<br/>You can turn on debug to examine the response but it is not likely to be something you can fix at this end of the federation.");
@@ -161,29 +172,31 @@ try {
      $sts_as_bash[$short_role] = $sts_as_bash[$short_role] . "export AWS_SECRET_ACCESS_KEY=" . $result[$short_role]['Credentials']['SecretAccessKey'] . "\n";
      $sts_as_bash[$short_role] = $sts_as_bash[$short_role] . "export AWS_SECURITY_TOKEN=" . $result[$short_role]['Credentials']['SessionToken'] . "\n";
      $sts_as_json[$short_role] = json_encode($result[$short_role]['Credentials'] );
-     $sts_as_debug[$short_role]= $result[$short_role]; 
+#     $sts_as_debug[$short_role]= $result[$short_role]; 
 
      print	"<script>sts_as_bash[\"{$short_role}\"]=\"". str_replace("\n",";",$sts_as_bash[$short_role]) . "\";</script>";
+     print "<br/>";
      print	"<script>sts_as_json[\"{$short_role}\"]=". $sts_as_json[$short_role] . ";</script>";
-     print	"<script>sts_as_debug[\"{$short_role}\"]=\"". str_replace("\n"," ",htmlspecialchars($sts_as_debug[$short_role])) . "\";</script>";
+
+#     print	"<script>sts_as_debug[\"{$short_role}\"]=\"". str_replace("\n"," ",htmlspecialchars($sts_as_debug[$short_role])) . "\";</script>";
 
     }
 
-
+     print	"<script>current_format = 'bash'</script>";
+     print	"<script>current_role  = '".array_keys($sts_as_bash)[0]."'</script>";
      print	"<script>var valid_token_acquired=true;</script>";
+     $token_acquired = true;
 }
 
 } catch (\Aws\Sts\Exception\ExpiredTokenException $e) {
     print "Token expired. Note that an STS ticket must be redeemed within 5 minutes of issuance.<br/>";
-   $ls_template= "<div id=\"warn\" class=\"warning\">Click on this link to <a href=\"%s?SAMLRequest=%s\">%s</a> to receive a new one.</div>";
+   $ls_template= "<div id=\"warn\" class=\"warning\">Click on this link to <a href=\"%s?SAMLRequest=%s\">%s</a> to receive a new one.</div><br/>";
    print sprintf($ls_template,IDP_SSO_URL,generateAuthnRequest(),IDP_DISPLAY_NAME);
 }
 catch (Exception $e) {
     print $e->getMessage();
 }
 ?>
-	</pre>
-
 <?php
 if ($method == "POST") {
 ?>
@@ -196,6 +209,29 @@ if ($method == "POST") {
 }
 ?>
       </div>
+<?php
+     if($token_acquired && count(array_keys($sts_as_bash)) > 1){
+?>
+You are authorized to assume more than one role. Choose role below to update token: <br/>
+<div class="btn-group btn-group-xs" role="group" >
+
+<?php
+   $button_cnt =0;
+     foreach (array_keys($sts_as_bash) as $r){
+?>
+  <button class="btn btn-default btn-xs role_button" id="button_<?php echo $r?>" onClick="format_content(null,'<?php echo array_keys($sts_as_bash)[$button_cnt]?>')">
+    <?php echo array_keys($sts_as_bash)[$button_cnt++]?>
+  </button>
+
+<?php
+}
+?>
+</div>
+<?php
+}
+?>
+
+<br/>
 
 <div align="right"><a data-toggle="collapse" data-target="#help_text" href="#" > help &gt;&gt</a></div>
 
@@ -203,34 +239,46 @@ if ($method == "POST") {
       <div class="row marketing" >
 
         <div class="col-lg-6">
-          <h4>What is an STS token?</h4>
-<p>Temporary credentials you can use instead of hard-coding your actual secret key/access key on a script. The easiest way to use it is to copy paste the values as bash environment variables and start running aws cli commands.</p>
-
           <h4>What is this page?</h4>
-          <p>A SAML 2.0 Service Provider, which serves AWS STS tokens. In other words is a helper app that gives you temporary credentials to make AWS calls. It is the result of authenticating with your enterprise credentials instead of using AWS long-term credentials associated with a user.</p>
+          <p>A helper app that gives you temporary credentials to make Amazon Web Services (AWS) calls.</p>
 
-          <h4>Why is it useful?</h4>
-AWS federation is commonly understood as loggin in to AWS console by authenticating through Active Directory. Some people would like extend that federation model to additionally make CLI and API calls. Instead of using long-term access keys (and worrying about their safety), the user can make calls using the temporary credentials above. Using this extended form of federation an organization can reduce the number of credentials provisioned inside AWS and instead manage authentication on its own (e.g. exclusively inside Active Directory, without ever provisioning passwords or keys to users inside AWS.)</p>
+          <h4>What is an STS token?</h4>
+<p>Temporary credentials you can use, for example, to avoid hard-coding a secret key on a script. </p>
+
+          <h4>How can I use this?</h4>
+<p>The easiest way to use it is to copy paste the values as bash environment variables and start running aws cli commands. If you have not used the aws command line tools or the aws apis for scripting you need to <a href="http://aws.amazon.com/cli/">start there</a>. </p>
+
+          <h4>Why use this?</h4>
+AWS federation allows login in to AWS console by authenticating against enterprise accounts (e.g.Active Directory) rather than provisioning users in AWS. <br/>Some people would like extend that federation model to make Command Line and API calls. <br/>Instead of using long-term access keys (and worrying about their safety), the user can make calls using the temporary credentials above. Using this extended form of federation an organization can reduce the number of credentials provisioned inside AWS and instead manage authentication on its own (e.g. exclusively inside Active Directory, without ever provisioning passwords or keys to users inside AWS.)</p>
 
 	</div>
 
         <div class="col-lg-6">
 <!--          <h4>Why use it?</h4>
           <p>If you have a working AWS federation (e.g. with ADFS), and want to make AWS CLI/API calls authenticating through AD instead of authenticating wih AWS-provided access keys.</p>
--->
+
 
           <h4>Usage Demo video</h4>
           <p>You can watch a simple demo video here. For more detailed information on implementation and configuration see the help page.</p>
+-->
+          <h4>How long is the token valid?</h4>
+          <p>60 minutes.</p>
 
           <h4>Can the Token last longer?</h4>
-          <p>No. This is a hard limit set by amazon. Good news is you don't need to re-type your credentials in your IdP. As long as you are logged in your iDP you can just refresh this page and get a new token.</p>
+          <p>No. This is a hard limit set by amazon. Good news is you don't need to re-type your credentials. As long as you are logged in you can just refresh this page and get a new token.</p>
 
+          <h4>Can I just save the token and use it later?</h4>
+          <p>No. STS tokens need to be redeemed within 5 minutes of issuance. Again, this is a hard limit set by Amazon.</p>
 
+          <h4>Can I use this not just in scripts but also in larger apps?</h4>
+          <p>Not recommended. There are other options, such as giving your AMI instance a role. This service is mainly intended for running scripts or making manual calls through the cli. </p>
+
+<!--
           <h4>Quick Configuration</h4>
           <p>Add this <a href="metadata.xml">metadata</a> to your ADFS or similar iDP to add the STS Dispenser as a service provider</p>. For more see the documentation folder.</p>
+-->
         </div>
 
-      </div>
       </div>
       <footer class="footer">
         <p class="copyright">&copy; Fabio Arciniegas, Trend Micro 2015</p>
