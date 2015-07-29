@@ -194,7 +194,11 @@ try {
    print sprintf($ls_template,IDP_SSO_URL,generateAuthnRequest(),IDP_DISPLAY_NAME);
 }
 catch (Exception $e) {
-    print $e->getMessage();
+
+    print "Error acquiring token. Note that an STS ticket must be redeemed within 5 minutes of issuance.<br/>";
+   $ls_template= "<div id=\"warn\" class=\"warning\">Click on this link to <a href=\"%s?SAMLRequest=%s\">%s</a> to receive a new one.</div><br/>";
+   print sprintf($ls_template,IDP_SSO_URL,generateAuthnRequest(),IDP_DISPLAY_NAME);
+
 }
 ?>
 <?php
