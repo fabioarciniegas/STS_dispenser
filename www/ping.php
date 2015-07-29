@@ -1,0 +1,1 @@
+ping health check for load balancing. should return 200.
