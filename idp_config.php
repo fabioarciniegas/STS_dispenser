@@ -21,7 +21,6 @@ function generateAuthnRequest($prevent_encoding = false) {
 # IDP and correct verification of the signature in the assertion, this
 # id can be ignored altogether for the purposes of this SP. 
 
-
 $authnRequestTemplate = <<<AUTHREQ
 <samlp:AuthnRequest
     xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"

@@ -119,7 +119,7 @@ if ($method != "POST"  && AUTO_INITIATE) {
 <?php
 try {
     if ($method != "POST") {
-    print "To receive a token you must  authenticate.";
+    print "To receive a token you must be authenticated with your identity provider (e.g. ADFS)";
    $ls_template= "<div id=\"warn\" class=\"warning\">You are now being redirected to <a href=\"%s?SAMLRequest=%s\">%s</a></div>";
         if (AUTO_INITIATE) {
          print sprintf($ls_template,IDP_SSO_URL,generateAuthnRequest(),IDP_DISPLAY_NAME);
@@ -162,13 +162,6 @@ try {
                                        'DurationSeconds' => 3600));
 
 
-// TODO: configure order of assertion
-     // $exp = $result[$short_role]['Credentials']['Expiration'];
-     // $exp2 = strtotime($exp);
-     // $current_time = time();
-     // $diff = round(($exp2 - $current_time)/60,2);
-     // print "<p class=\"lead\"> Will be valid until  {$exp} ( ${$diff}  minutes)</p>";
-
      $sts_as_bash[$short_role] = "export AWS_ACCESS_KEY_ID=" . $result[$short_role]['Credentials']['AccessKeyId'] . "\n";
      $sts_as_bash[$short_role] = $sts_as_bash[$short_role] . "export AWS_SECRET_ACCESS_KEY=" . $result[$short_role]['Credentials']['SecretAccessKey'] . "\n";
      $sts_as_bash[$short_role] = $sts_as_bash[$short_role] . "export AWS_SECURITY_TOKEN=" . $result[$short_role]['Credentials']['SessionToken'] . "\n";
@@ -189,19 +182,23 @@ try {
      $token_acquired = true;
 }
 
-} catch (\Aws\Sts\Exception\ExpiredTokenException $e) {
-    print "Token expired. Note that an STS ticket must be redeemed within 5 minutes of issuance.<br/>";
-   $ls_template= "<div id=\"warn\" class=\"warning\">Click on this link to <a href=\"%s?SAMLRequest=%s\">%s</a> to receive a new one.</div><br/>";
-   print sprintf($ls_template,IDP_SSO_URL,generateAuthnRequest(),IDP_DISPLAY_NAME);
-}
+} 
 catch (Exception $e) {
 
-    print "Error acquiring token. Note that an STS ticket must be redeemed within 5 minutes of issuance.<br/>";
-   $ls_template= "<div id=\"warn\" class=\"warning\">Click on this link to <a href=\"%s?SAMLRequest=%s\">%s</a> to receive a new one.</div><br/>";
-   print sprintf($ls_template,IDP_SSO_URL,generateAuthnRequest(),IDP_DISPLAY_NAME);
+    print "Token error. Note that an STS ticket must be redeemed within 5 minutes of issuance.<br/>";
 
-   print $e->getMessage();
-   print $e->getTraceAsString();
+   $ls_template= "<div id=\"warn\" class=\"warning\">Click on this link to <a href=\"%s?SAMLRequest=%s\">%s</a> to receive a new one.</div><br/>";
+
+    if (!IDP_INITIATED_ONLY){
+   print sprintf($ls_template,IDP_SSO_URL,generateAuthnRequest(),IDP_DISPLAY_NAME);
+   }
+   else {
+      $ls_template= "<div id=\"warn\" class=\"warning\">Click on this link to <a href=\"%s\">%s</a> to receive a new one.</div><br/>";
+      print sprintf($ls_template,LINK_ON_ERROR,IDP_DISPLAY_NAME);
+}
+
+//   print $e->getMessage();
+//   print $e->getTraceAsString();
 }
 ?>
 <?php
@@ -288,7 +285,7 @@ AWS federation allows login in to AWS console by authenticating against enterpri
 
       </div>
       <footer class="footer">
-        <p class="copyright">&copy; Fabio Arciniegas, Trend Micro 2015</p>
+        <p class="copyright">&copy; Trend Micro 2015</p>
       </footer>
 
     </div> <!-- /container -->
