@@ -151,17 +151,18 @@ try {
 
     foreach ($assertion_roles as $r){
       $pieces = explode(",",$r);
-      $roles[$pieces[0]]=$pieces[1];
-      $short_role = after_last("/",$pieces[0]);
+      $roles[$pieces[1]]=$pieces[0];
+      $short_role = after_last("/",$pieces[1]);
 
       $result[$short_role] = $client->assumeRoleWithSAML(array(
-                                      'RoleArn' => $pieces[0],
-                                       'PrincipalArn' => $pieces[1],
+                                      'RoleArn' => $pieces[1],
+                                       'PrincipalArn' => $pieces[0],
                                        'SAMLAssertion' => $_POST['SAMLResponse'],
                                         //    'Policy' => 'further_restrictions_if_desired',
                                        'DurationSeconds' => 3600));
 
 
+// TODO: configure order of assertion
      // $exp = $result[$short_role]['Credentials']['Expiration'];
      // $exp2 = strtotime($exp);
      // $current_time = time();
@@ -199,6 +200,8 @@ catch (Exception $e) {
    $ls_template= "<div id=\"warn\" class=\"warning\">Click on this link to <a href=\"%s?SAMLRequest=%s\">%s</a> to receive a new one.</div><br/>";
    print sprintf($ls_template,IDP_SSO_URL,generateAuthnRequest(),IDP_DISPLAY_NAME);
 
+   print $e->getMessage();
+   print $e->getTraceAsString();
 }
 ?>
 <?php
