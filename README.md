@@ -9,16 +9,23 @@ AWS federation is commonly understood as loggin in to AWS console by authenticat
 
 # Installation
 
-Install composer if you have not done so already:
+Install apache2 php and curl if you have not done so already.e.g
 
 ```
-curl -sS https://getcomposer.org/installer | php
+apt-get install apache2 php5 curl
 ```
 
 install ext-curl and php SimpleXML(enabled by default in php5) if you haven't. Typically achieved through your favorite package manager. e.g.
 ```
 sudo apt-get install php5-curl
 ```
+
+inside the STS_dispenser directory (e.g. /var/www/STS_dispenser ) Install composer ( if you have not done so already):
+
+```
+curl -sS https://getcomposer.org/installer | php
+```
+
 
 install dependency libraries (aws libraries etc. specified in composer.json)
 ```
@@ -31,8 +38,7 @@ Make www directory available through webserver. e.g. point the document root of 
  DocumentRoot /var/webapps/STS_dispenser/www
 ```
 
-TODO: explain configuration of IdP.
-
+Adjust the variables in config.php to reflect your URL and preferences.
 
 ## Local Dependencies 
  
@@ -44,5 +50,5 @@ TODO: explain configuration of IdP.
 This application acts as a SAML 2.0 Service Provider. For it to work,  it needs a SAML 2.0 Identity Provider. 
 
 
-=Fabio Arciniegas, Trend Micro 2015
+Fabio Arciniegas, Trend Micro 2015
  
