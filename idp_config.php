@@ -42,6 +42,9 @@ AUTHREQ;
 
     $saml = sprintf($authnRequestTemplate,gmdate("Y-m-d\TH:i:s\Z"),
                         uniqid(),
+#                        'https://signin.aws.amazon.com/saml',
+#                        'https://signin.aws.amazon.com/saml',
+#                        'https://signin.aws.amazon.com/saml'	
                         SP_ID,
                         SP_ID,
                         SP_ID			
@@ -56,6 +59,10 @@ return $prevent_encoding ? $utf8 : $urlencoded;
 
 function decodeSAMLResponse($response) {
 	 return base64_decode($response);
+}
+
+function signAuthnRequest($request) {
+	 return sha1($request);
 }
 
 // use strrevpos function in case your php version does not include it

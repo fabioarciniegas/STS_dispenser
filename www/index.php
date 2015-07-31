@@ -194,7 +194,7 @@ catch (Exception $e) {
    }
    else {
       $ls_template= "<div id=\"warn\" class=\"warning\">Click on this link to <a href=\"%s\">%s</a> to receive a new one.</div><br/>";
-      print sprintf($ls_template,LINK_ON_ERROR,IDP_DISPLAY_NAME);
+      print sprintf($ls_template,STATIC_LINK_ON_ERROR,IDP_DISPLAY_NAME);
 }
 
 //   print $e->getMessage();
