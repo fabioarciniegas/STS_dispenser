@@ -2,7 +2,7 @@
 require("../config.php"); 
 require("../idp_config.php"); 
 require '../vendor/autoload.php';
-# TODO: check health of metadata 
+
 use Aws\Sts\StsClient;
 use Aws\Iam\IamClient;
 ?>
@@ -27,7 +27,6 @@ if ($method != "POST"  && AUTO_INITIATE) {
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
     <meta name="description" content="STS Dispenser, A SAML 2.0 SP used to provided AWS STS tokens via a web page.">
-    <meta name="author" content="Fabio Arciniegas fab.arciniegas@gmail.com">
     <link rel="icon" href="../../favicon.ico">
     <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
@@ -133,7 +132,8 @@ try {
 
     $assertion = decodeSAMLResponse($_POST['SAMLResponse']);
     if(READ_RESPONSE_FILE_INSTEAD){
-         $assertion = file_get_contents("response.xml");
+         error_log("reading from static saml");
+         $assertion = file_get_contents("/var/www/STS_dispenser/static.saml");
     }
 
     $assertion_xml = simplexml_load_string($assertion);
@@ -154,7 +154,6 @@ try {
       $arn_pieces = array();
       preg_match("/.*::(\d+).*\/(.+)/",$pieces[1],$arn_pieces);
       $short_role = $arn_pieces[2]."_".$arn_pieces[1];
-
 
       try {
        
