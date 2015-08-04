@@ -29,7 +29,6 @@ $authnRequestTemplate = <<<AUTHREQ
     ID="%s"
     Version="2.0"
     Destination="%s"
-    ProtocolBinding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
    AssertionConsumerServiceURL="%s"
     AssertionConsumerServiceIndex="0"
     AttributeConsumingServiceIndex="0">
@@ -42,9 +41,6 @@ AUTHREQ;
 
     $saml = sprintf($authnRequestTemplate,gmdate("Y-m-d\TH:i:s\Z"),
                         uniqid(),
-#                        'https://signin.aws.amazon.com/saml',
-#                        'https://signin.aws.amazon.com/saml',
-#                        'https://signin.aws.amazon.com/saml'	
                         SP_ID,
                         SP_ID,
                         SP_ID			
