@@ -133,7 +133,7 @@ try {
     $assertion = decodeSAMLResponse($_POST['SAMLResponse']);
     if(READ_RESPONSE_FILE_INSTEAD){
          error_log("reading from static saml");
-         $assertion = file_get_contents("/var/www/STS_dispenser/static.saml");
+         $assertion = file_get_contents(RESPONSE_FILE);
     }
 
     $assertion_xml = simplexml_load_string($assertion);
