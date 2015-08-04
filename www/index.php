@@ -113,6 +113,7 @@ if ($method != "POST"  && AUTO_INITIATE) {
       <div class="jumbotron">
           <h2 id="greeting">Your STS Token</h2>
       <pre id="sts_pre"></pre>
+
 <!-- *************************************************
      STS LOGIC
      ************************************************* -->
@@ -146,14 +147,13 @@ try {
     $saml_ns->registerXPathNamespace ('s','urn:oasis:names:tc:SAML:2.0:assertion');
     $assertion_roles = $saml_ns->xpath('//s:Assertion/s:AttributeStatement/s:Attribute[@Name=\'https://aws.amazon.com/SAML/Attributes/Role\']/s:AttributeValue');
     $user_id = $saml_ns->xpath('//s:Assertion/s:AttributeStatement/s:Attribute[@Name=\'uid\']/s:AttributeValue');
-    $roles = array();
-
 
     foreach ($assertion_roles as $r){
       $pieces = explode(",",$r);
-      $roles[$pieces[1]]=$pieces[0];
-      $short_role = after_last("/",$pieces[1]);
-
+      $arn_pieces = array();
+#      $short_role = preg_match("/.*iam::(\d+):role\/(\\.+)/",$pieces[1],$arn_pieces);
+      $short_role = preg_match("/.*::(\d+).*\/(.+)/",$pieces[1],$arn_pieces);
+      $short_role = $arn_pieces[2]."_".$arn_pieces[1];
       $result[$short_role] = $client->assumeRoleWithSAML(array(
                                       'RoleArn' => $pieces[1],
                                        'PrincipalArn' => $pieces[0],
@@ -161,18 +161,21 @@ try {
                                         //    'Policy' => 'further_restrictions_if_desired',
                                        'DurationSeconds' => 3600));
 
+$bashTemplate = <<<BASH_TEMPLATE
+export AWS_ACCESS_KEY_ID="%s"; 
+export AWS_SECRET_ACCESS_KEY="%s"; 
+export AWS_SECURITY_TOKEN="%s"; 
+BASH_TEMPLATE;
 
-     $sts_as_bash[$short_role] = "export AWS_ACCESS_KEY_ID=" . $result[$short_role]['Credentials']['AccessKeyId'] . "\n";
-     $sts_as_bash[$short_role] = $sts_as_bash[$short_role] . "export AWS_SECRET_ACCESS_KEY=" . $result[$short_role]['Credentials']['SecretAccessKey'] . "\n";
-     $sts_as_bash[$short_role] = $sts_as_bash[$short_role] . "export AWS_SECURITY_TOKEN=" . $result[$short_role]['Credentials']['SessionToken'] . "\n";
+     $sts_as_bash[$short_role] = sprintf($bashTemplate,
+                                         $result[$short_role]['Credentials']['AccessKeyId'],
+                                         $result[$short_role]['Credentials']['SecretAccessKey'],
+                                         $result[$short_role]['Credentials']['SessionToken']);
+
+
      $sts_as_json[$short_role] = json_encode($result[$short_role]['Credentials'] );
-#     $sts_as_debug[$short_role]= $result[$short_role]; 
-
-     print	"<script>sts_as_bash[\"{$short_role}\"]=\"". str_replace("\n",";",$sts_as_bash[$short_role]) . "\";</script>";
-     print "<br/>";
-     print	"<script>sts_as_json[\"{$short_role}\"]=". $sts_as_json[$short_role] . ";</script>";
-
-#     print	"<script>sts_as_debug[\"{$short_role}\"]=\"". str_replace("\n"," ",htmlspecialchars($sts_as_debug[$short_role])) . "\";</script>";
+     print	"<script>sts_as_bash[\"{$short_role}\"]=". json_encode($sts_as_bash[$short_role]) . "</script>\n";
+     print	"<script>sts_as_json[\"{$short_role}\"]=". $sts_as_json[$short_role] . ";</script>\n";
 
     }
 
