@@ -13,7 +13,7 @@ use Aws\Iam\IamClient;
 
     <title>STS Token Dispenser</title>    
 <?php
-     $token_acquired = false;
+     $token_acquired = 0;
     $method = $_SERVER['REQUEST_METHOD'];
 
 if ($method != "POST"  && AUTO_INITIATE) {
@@ -117,6 +117,8 @@ if ($method != "POST"  && AUTO_INITIATE) {
      STS LOGIC
      ************************************************* -->
 <?php
+$all_tokens_one_bash = "";
+$all_tokens_one_json = "[";
 try {
     if ($method != "POST") {
     print "To receive a token you must be authenticated with your identity provider (e.g. ADFS)";
@@ -148,7 +150,6 @@ try {
     $assertion_roles = $saml_ns->xpath('//s:Assertion/s:AttributeStatement/s:Attribute[@Name=\'https://aws.amazon.com/SAML/Attributes/Role\']/s:AttributeValue');
     $user_id = $saml_ns->xpath('//s:Assertion/s:AttributeStatement/s:Attribute[@Name=\'uid\']/s:AttributeValue');
 
-   $force_fail = 0;
     foreach ($assertion_roles as $r){
       $pieces = explode(",",$r);
       $arn_pieces = array();
@@ -190,26 +191,56 @@ BASH_TEMPLATE;
 
 
      $sts_as_json[$short_role] = json_encode($result[$short_role]['Credentials'] );
-     $token_acquired = true;
+
+
+$all_tokens_template = <<<AGGREGATE_BASH_TEMPLATE
+STS_KEYS[%d]="%s";
+STS_SECRETS[%d]="%s";
+STS_TOKENS[%d]="%s";
+STS_ALIASES[%d]="%s";
+
+AGGREGATE_BASH_TEMPLATE;
+
+$all_tokens_one_bash = $all_tokens_one_bash . sprintf($all_tokens_template,
+                    $token_acquired,$result[$short_role]['Credentials']['AccessKeyId'],
+                    $token_acquired,$result[$short_role]['Credentials']['SecretAccessKey'],
+                    $token_acquired,$result[$short_role]['Credentials']['SessionToken'],
+                    $token_acquired,$short_role
+);
+
+$all_tokens_one_json = $all_tokens_one_json . json_encode($result[$short_role]['Credentials']) . ",";
+     $token_acquired++;
+
 
     } catch (Exception $e) {
      $sts_as_bash[$short_role] = "#Token for this account/role (".$pieces[1].") could not be acquired.";
      $sts_as_json[$short_role] = "\"Token for this account/role (".$pieces[1].") could not be acquired.\"";
+
     error_log($e->getMessage());
      }
     finally {
-        print	"<script>sts_as_bash[\"{$short_role}\"]=". json_encode($sts_as_bash[$short_role]) . "</script>\n";
-        print	"<script>sts_as_json[\"{$short_role}\"]=". $sts_as_json[$short_role] . ";</script>\n";
+        print	"\n<script>sts_as_bash[\"{$short_role}\"]=". json_encode($sts_as_bash[$short_role]) . "</script>";
+        print	"\n<script>sts_as_json[\"{$short_role}\"]=". $sts_as_json[$short_role] . ";</script>\n";
     }
+
+}
+
+   if ($token_acquired === 0){          
+      throw new Exception("An assertion was received but no token from it could be acquired.");
+   }
+
+     $sts_as_bash['All_All'] = $all_tokens_one_bash;
+     print	"<script>sts_as_bash['All_All']=". json_encode($all_tokens_one_bash) . ";</script>";
+
+     $all_tokens_one_json = $all_tokens_one_json . "]";
+     $sts_as_json['All_All'] = $all_tokens_one_json;
+     print	"<script>sts_as_json['All_All']=". json_encode($all_tokens_one_json) . ";</script>";
+
+
 
      print	"<script>current_format = 'bash'</script>";
      print	"<script>current_role  = '".array_keys($sts_as_bash)[0]."'</script>";
      print	"<script>var valid_token_acquired=true;</script>";
-
-}
-   if ($token_acquired == false){          
-      throw new Exception("An assertion was received but no token from it could be acquired.");
-   }
 
 } 
 }catch (Exception $e) {
@@ -247,10 +278,18 @@ You are authorized to assume more than one role. Choose role below to update tok
 
 <?php
    $button_cnt =0;
+   $previous_account = "none";
      foreach (array_keys($sts_as_bash) as $r){
+      $account = after_last("_",$r);
+      if($account != $previous_account){
+          print "<h3>".$account."</h3>";
+          $previous_account = $account;      
+      }
 ?>
+
+
   <button class="btn btn-default btn-xs role_button" id="button_<?php echo $r?>" onClick="format_content(null,'<?php echo array_keys($sts_as_bash)[$button_cnt]?>')">
-    <?php echo array_keys($sts_as_bash)[$button_cnt++]?>
+    <?php echo before_last("_",array_keys($sts_as_bash)[$button_cnt++])?>
   </button>
 
 <?php
@@ -303,22 +342,20 @@ AWS federation allows login in to AWS console by authenticating against enterpri
           <h4>Can I use this not just in scripts but also in larger apps?</h4>
           <p>Not recommended. There are other options, such as giving your AMI instance a role. This service is mainly intended for running scripts or making manual calls through the cli. </p>
 
-<!--
-          <h4>Quick Configuration</h4>
-          <p>Add this <a href="metadata.xml">metadata</a> to your ADFS or similar iDP to add the STS Dispenser as a service provider</p>. For more see the documentation folder.</p>
--->
         </div>
 
       </div>
       <footer class="footer">
         <p class="copyright">&copy; Trend Micro 2015</p>
       </footer>
+    </div>
+ <!-- SCRAPEABLE
 
-    </div> <!-- /container -->
+<?php echo $all_tokens_one_bash?>
+total_sts_tokens = <?php echo $token_acquired?>;
 
-    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug 
-    <script src="../../assets/js/ie10-viewport-bug-workaround.js"></script>
--->
+ -->
+
 
   </body>
 </html>
