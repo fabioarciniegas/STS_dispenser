@@ -140,7 +140,7 @@ try {
     $sts_as_debug['__raw_idp_assertion__']= $assertion; 
     print	"<script>sts_as_debug['__raw_idp_assertion__']=\"". str_replace("\n"," ",htmlspecialchars($sts_as_debug['__raw_idp_assertion__'])) . "\";</script>";
 
-    if($assertion_xml == false){
+    if($assertion_xml === false){
          throw new Exception("Malformed response received. This is likely a problem in the IdP.<br/>You can turn on debug to examine the response but it is not likely to be something you can fix at this end of the federation.");
     }
     $saml_ns = $assertion_xml->children('urn:oasis:names:tc:SAML:2.0:assertion');
@@ -148,12 +148,16 @@ try {
     $assertion_roles = $saml_ns->xpath('//s:Assertion/s:AttributeStatement/s:Attribute[@Name=\'https://aws.amazon.com/SAML/Attributes/Role\']/s:AttributeValue');
     $user_id = $saml_ns->xpath('//s:Assertion/s:AttributeStatement/s:Attribute[@Name=\'uid\']/s:AttributeValue');
 
+   $force_fail = 0;
     foreach ($assertion_roles as $r){
       $pieces = explode(",",$r);
       $arn_pieces = array();
-#      $short_role = preg_match("/.*iam::(\d+):role\/(\\.+)/",$pieces[1],$arn_pieces);
       $short_role = preg_match("/.*::(\d+).*\/(.+)/",$pieces[1],$arn_pieces);
       $short_role = $arn_pieces[2]."_".$arn_pieces[1];
+
+
+      try {
+       
       $result[$short_role] = $client->assumeRoleWithSAML(array(
                                       'RoleArn' => $pieces[1],
                                        'PrincipalArn' => $pieces[0],
@@ -174,21 +178,31 @@ BASH_TEMPLATE;
 
 
      $sts_as_json[$short_role] = json_encode($result[$short_role]['Credentials'] );
-     print	"<script>sts_as_bash[\"{$short_role}\"]=". json_encode($sts_as_bash[$short_role]) . "</script>\n";
-     print	"<script>sts_as_json[\"{$short_role}\"]=". $sts_as_json[$short_role] . ";</script>\n";
+     $token_acquired = true;
 
+    } catch (Exception $e) {
+     $sts_as_bash[$short_role] = "#Token for this account/role (".$pieces[1].") could not be acquired.";
+     $sts_as_json[$short_role] = "\"Token for this account/role (".$pieces[1].") could not be acquired.\"";
+    error_log($e->getMessage());
+     }
+    finally {
+        print	"<script>sts_as_bash[\"{$short_role}\"]=". json_encode($sts_as_bash[$short_role]) . "</script>\n";
+        print	"<script>sts_as_json[\"{$short_role}\"]=". $sts_as_json[$short_role] . ";</script>\n";
     }
 
      print	"<script>current_format = 'bash'</script>";
      print	"<script>current_role  = '".array_keys($sts_as_bash)[0]."'</script>";
      print	"<script>var valid_token_acquired=true;</script>";
-     $token_acquired = true;
+
 }
+   if ($token_acquired == false){          
+      throw new Exception("An assertion was received but no token from it could be acquired.");
+   }
 
 } 
-catch (Exception $e) {
-
-    print "Token error. Note that an STS ticket must be redeemed within 5 minutes of issuance.<br/>";
+}catch (Exception $e) {
+    error_log($e->getMessage());
+    print "No tokens at all available (".count(array_keys($sts_as_bash))." roles tried). Your assertion may have expired.<br/>";
 
    $ls_template= "<div id=\"warn\" class=\"warning\">Click on this link to <a href=\"%s?SAMLRequest=%s\">%s</a> to receive a new one.</div><br/>";
 
@@ -199,9 +213,6 @@ catch (Exception $e) {
       $ls_template= "<div id=\"warn\" class=\"warning\">Click on this link to <a href=\"%s\">%s</a> to receive a new one.</div><br/>";
       print sprintf($ls_template,STATIC_LINK_ON_ERROR,IDP_DISPLAY_NAME);
 }
-
-//   print $e->getMessage();
-//   print $e->getTraceAsString();
 }
 ?>
 <?php
