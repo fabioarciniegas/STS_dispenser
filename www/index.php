@@ -17,9 +17,17 @@ use Aws\Iam\IamClient;
     $method = $_SERVER['REQUEST_METHOD'];
 
 if ($method != "POST"  && AUTO_INITIATE) {
+    if(!IDP_INITIATED_ONLY) {
 ?>
+
 <meta http-equiv="refresh" content="<?php echo  REDIRECT_DELAY;?>;URL='<?php echo IDP_SSO_URL;?>?SAMLRequest=<?php  echo generateAuthnRequest();?>'/>
 <?php
+}
+     else {
+?>
+<meta http-equiv="refresh" content="<?php echo  REDIRECT_DELAY;?>;URL='<?php echo STATIC_IDP_INITIATION_URL;?>'/>
+<?php
+}
 }
 ?>
     <meta charset="utf-8">
@@ -122,9 +130,15 @@ $all_tokens_one_json = "[";
 try {
     if ($method != "POST") {
     print "To receive a token you must be authenticated with your identity provider (e.g. ADFS)";
-   $ls_template= "<div id=\"warn\" class=\"warning\">You are now being redirected to <a href=\"%s?SAMLRequest=%s\">%s</a></div>";
-        if (AUTO_INITIATE) {
+
+        if (SHOW_INITIATION_LINK_ON_GET) {
+         if(IDP_INITIATED_ONLY){
+         $ls_template= "<div id=\"warn\" class=\"warning\">You are now being redirected to <a href=\"%s\">%s</a></div>";
+         print sprintf($ls_template,STATIC_IDP_INITIATION_URL,IDP_DISPLAY_NAME);
+         } else{
+         $ls_template= "<div id=\"warn\" class=\"warning\">You are now being redirected to <a href=\"%s?SAMLRequest=%s\">%s</a></div>";
          print sprintf($ls_template,IDP_SSO_URL,generateAuthnRequest(),IDP_DISPLAY_NAME);
+         }
         }
     }
     else {
@@ -234,7 +248,7 @@ $all_tokens_one_json = $all_tokens_one_json . json_encode($result[$short_role]['
 
      $all_tokens_one_json = $all_tokens_one_json . "]";
      $sts_as_json['All_All'] = $all_tokens_one_json;
-     print	"<script>sts_as_json['All_All']=". json_encode($all_tokens_one_json) . ";</script>";
+     print	"<script>sts_as_json['All_All']=". $all_tokens_one_json . ";</script>";
 
 
 
@@ -247,15 +261,17 @@ $all_tokens_one_json = $all_tokens_one_json . json_encode($result[$short_role]['
     error_log($e->getMessage());
     print "No tokens at all available (".count(array_keys($sts_as_bash))." roles tried). Your assertion may have expired.<br/>";
 
-   $ls_template= "<div id=\"warn\" class=\"warning\">Click on this link to <a href=\"%s?SAMLRequest=%s\">%s</a> to receive a new one.</div><br/>";
 
-    if (!IDP_INITIATED_ONLY){
-   print sprintf($ls_template,IDP_SSO_URL,generateAuthnRequest(),IDP_DISPLAY_NAME);
-   }
-   else {
-      $ls_template= "<div id=\"warn\" class=\"warning\">Click on this link to <a href=\"%s\">%s</a> to receive a new one.</div><br/>";
-      print sprintf($ls_template,STATIC_LINK_ON_ERROR,IDP_DISPLAY_NAME);
-}
+    if (SHOW_INITIATION_LINK_ON_ERROR) {
+       if (!IDP_INITIATED_ONLY){
+          $ls_template= "<div id=\"warn\" class=\"warning\">Click on this link to <a href=\"%s?SAMLRequest=%s\">%s</a> to receive a new one.</div><br/>";
+          print sprintf($ls_template,IDP_SSO_URL,generateAuthnRequest(),IDP_DISPLAY_NAME);
+        }
+       else {
+          $ls_template= "<div id=\"warn\" class=\"warning\">Click on this link to <a href=\"%s\">%s</a> to receive a new one.</div><br/>";
+          print sprintf($ls_template,STATIC_IDP_INITIATION_URL,IDP_DISPLAY_NAME);
+       }
+    }
 }
 ?>
 <?php
