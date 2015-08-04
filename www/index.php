@@ -298,7 +298,7 @@ You are authorized to assume more than one role. Choose role below to update tok
      foreach (array_keys($sts_as_bash) as $r){
       $account = after_last("_",$r);
       if($account != $previous_account){
-          print "<h3>".$account."</h3>";
+          print "<br/><h3>".$account."</h3>";
           $previous_account = $account;      
       }
 ?>
