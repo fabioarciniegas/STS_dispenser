@@ -152,18 +152,26 @@ try {
     foreach ($assertion_roles as $r){
       $pieces = explode(",",$r);
       $arn_pieces = array();
-      $short_role = preg_match("/.*::(\d+).*\/(.+)/",$pieces[1],$arn_pieces);
+      preg_match("/.*::(\d+).*\/(.+)/",$pieces[1],$arn_pieces);
       $short_role = $arn_pieces[2]."_".$arn_pieces[1];
 
 
       try {
        
-      $result[$short_role] = $client->assumeRoleWithSAML(array(
+      $current_token = $client->assumeRoleWithSAML(array(
                                       'RoleArn' => $pieces[1],
                                        'PrincipalArn' => $pieces[0],
                                        'SAMLAssertion' => $_POST['SAMLResponse'],
                                         //    'Policy' => 'further_restrictions_if_desired',
                                        'DurationSeconds' => 3600));
+
+
+
+       $iamClient = IamClient::factory([
+                  'credentials' => $client->createCredentials($current_token),
+                  'version' => 'latest']);
+       $account_alias = $iamClient->listAccountAliases();
+
 
 $bashTemplate = <<<BASH_TEMPLATE
 export AWS_ACCESS_KEY_ID="%s"; 
@@ -171,6 +179,11 @@ export AWS_SECRET_ACCESS_KEY="%s";
 export AWS_SECURITY_TOKEN="%s"; 
 BASH_TEMPLATE;
 
+      if(count($account_alias['AccountAliases']) > 0){ 
+         $short_role = $arn_pieces[2]."_".$account_alias['AccountAliases'][0];
+      }
+#TODO: double sanitize account alias
+     $result[$short_role] = $current_token;
      $sts_as_bash[$short_role] = sprintf($bashTemplate,
                                          $result[$short_role]['Credentials']['AccessKeyId'],
                                          $result[$short_role]['Credentials']['SecretAccessKey'],
