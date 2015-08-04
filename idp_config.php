@@ -77,6 +77,11 @@ function after_last ($this, $inthat)
 {
    if (!is_bool(strrevpos($inthat, $this)))
    return substr($inthat, strrevpos($inthat, $this)+strlen($this));
-}
+};
+
+function before_last ($this, $inthat)
+{
+    return substr($inthat, 0, strrevpos($inthat, $this));
+};
 
 ?>
