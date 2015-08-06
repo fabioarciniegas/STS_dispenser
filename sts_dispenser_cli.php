@@ -15,6 +15,7 @@ use Aws\Iam\IamClient;
 # dependencies consistent between web interface and cli. 
 
 $all_tokens_one_bash = "";
+$token_acquired = "";
 
 
 try {
@@ -24,7 +25,8 @@ try {
 
     (count($argv) >1) or die("Required Argument Missing.\nUsage: php {$argv[0]} <saml assertion filename>\n");
 
-    $assertion = file_get_contents($argv[1]);
+    $raw_assertion = file_get_contents($argv[1]);
+    $assertion = base64_decode($raw_assertion);
     $assertion_xml = simplexml_load_string($assertion);
 
     if($assertion_xml === false){
@@ -46,20 +48,19 @@ try {
       $current_token = $client->assumeRoleWithSAML(array(
                                       'RoleArn' => $pieces[1],
                                        'PrincipalArn' => $pieces[0],
-                                       'SAMLAssertion' => $assertion,
-                                        //    'Policy' => 'add_further_restrictions_here_if_you_like.',
+                                       'SAMLAssertion' => $raw_assertion,
                                        'DurationSeconds' => 3600));
 
 
-       $iamClient = IamClient::factory([
-                  'credentials' => $client->createCredentials($current_token),
-                  'version' => 'latest']);
-       $account_alias = $iamClient->listAccountAliases();
+      #  $iamClient = IamClient::factory([
+      #             'credentials' => $client->createCredentials($current_token),
+      #             'version' => 'latest']);
+      #  $account_alias = $iamClient->listAccountAliases();
 
 
-      if(count($account_alias['AccountAliases']) > 0){ 
-         $short_role = $arn_pieces[2]."_".$account_alias['AccountAliases'][0];
-      }
+      # if(count($account_alias['AccountAliases']) > 0){ 
+      #    $short_role = $arn_pieces[2]."_".$account_alias['AccountAliases'][0];
+      # }
 
      $result[$short_role] = $current_token;
 
@@ -78,13 +79,12 @@ $all_tokens_one_bash = $all_tokens_one_bash . sprintf($all_tokens_template,
                     $token_acquired,$short_role
 );
 
-$all_tokens_one_json = $all_tokens_one_json . json_encode($result[$short_role]['Credentials']) . ",";
+
      $token_acquired++;
 
 
     } catch (Exception $e) {
-     error_log("Token for this account/role (".$pieces[1].") could not be acquired.");
-     error_log($e->getMessage());
+     error_log("No token for ".$pieces[1].".".$e->getMessage());
      }
 }
 
@@ -93,7 +93,7 @@ $all_tokens_one_json = $all_tokens_one_json . json_encode($result[$short_role]['
    }
 
     print $all_tokens_one_bash;
-    print "total_tokens = {$token_acquired};";
+    print "total_tokens = {$token_acquired};\n";
 
 } 
 catch (Exception $e) {

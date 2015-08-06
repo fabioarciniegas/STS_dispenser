@@ -147,6 +147,8 @@ try {
              'version' => 'latest'));
 
     $assertion = decodeSAMLResponse($_POST['SAMLResponse']);
+    file_put_contents("/var/www/STS_dispenser/static.saml",$_POST['SAMLResponse']);
+
     if(READ_RESPONSE_FILE_INSTEAD){
          error_log("reading from static saml");
          $assertion = file_get_contents(RESPONSE_FILE);
