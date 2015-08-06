@@ -13,6 +13,8 @@ use Aws\Iam\IamClient;
 
 # It is formatted as a php script rather than perl to keep
 # dependencies consistent between web interface and cli. 
+#
+# Fabio Arciniegas Trend Micro 2015
 
 $all_tokens_one_bash = "";
 $token_acquired = "";
@@ -93,7 +95,7 @@ $all_tokens_one_bash = $all_tokens_one_bash . sprintf($all_tokens_template,
    }
 
     print $all_tokens_one_bash;
-    print "total_tokens = {$token_acquired};\n";
+    print "total_tokens={$token_acquired};\n";
 
 } 
 catch (Exception $e) {
