@@ -5,6 +5,7 @@ require '../vendor/autoload.php';
 
 use Aws\Sts\StsClient;
 use Aws\Iam\IamClient;
+
 ?>
 
 <!DOCTYPE html>
@@ -147,7 +148,7 @@ try {
              'version' => 'latest'));
 
     $assertion = decodeSAMLResponse($_POST['SAMLResponse']);
-    file_put_contents("/var/www/STS_dispenser/static.saml",$_POST['SAMLResponse']);
+#    file_put_contents("/var/www/STS_dispenser/static.saml",$_POST['SAMLResponse']);
 
     if(READ_RESPONSE_FILE_INSTEAD){
          error_log("reading from static saml");
@@ -198,7 +199,7 @@ BASH_TEMPLATE;
       if(count($account_alias['AccountAliases']) > 0){ 
          $short_role = $arn_pieces[2]."_".$account_alias['AccountAliases'][0];
       }
-#TODO: double sanitize account alias
+
      $result[$short_role] = $current_token;
      $sts_as_bash[$short_role] = sprintf($bashTemplate,
                                          $result[$short_role]['Credentials']['AccessKeyId'],
@@ -300,7 +301,7 @@ You are authorized to assume more than one role. Choose role below to update tok
      foreach (array_keys($sts_as_bash) as $r){
       $account = after_last("_",$r);
       if($account != $previous_account){
-          print "<br/><h3>".$account."</h3>";
+          print "<br/><h3>".htmlspecialchars($account)."</h3>";
           $previous_account = $account;      
       }
 ?>
