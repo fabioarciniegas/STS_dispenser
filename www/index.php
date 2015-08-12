@@ -148,7 +148,7 @@ try {
              'version' => 'latest'));
 
     $assertion = decodeSAMLResponse($_POST['SAMLResponse']);
-#    file_put_contents("/var/www/STS_dispenser/static.saml",$_POST['SAMLResponse']);
+    file_put_contents("/var/www/STS_dispenser/static.saml",$_POST['SAMLResponse']);
 
     if(READ_RESPONSE_FILE_INSTEAD){
          error_log("reading from static saml");
@@ -342,13 +342,10 @@ AWS federation allows login in to AWS console by authenticating against enterpri
 	</div>
 
         <div class="col-lg-6">
-<!--          <h4>Why use it?</h4>
-          <p>If you have a working AWS federation (e.g. with ADFS), and want to make AWS CLI/API calls authenticating through AD instead of authenticating wih AWS-provided access keys.</p>
-
 
           <h4>Usage Demo video</h4>
-          <p>You can watch a simple demo video here. For more detailed information on implementation and configuration see the help page.</p>
--->
+          <p>You can watch this <a href="https://www.youtube.com/watch?v=sO04BEZSwZA">a simple demo video </a>. </p>
+
           <h4>How long is the token valid?</h4>
           <p>60 minutes.</p>
 

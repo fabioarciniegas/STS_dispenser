@@ -2,9 +2,13 @@
 
 A SAML 2.0 Service Provider, which serves AWS STS tokens. In other words is a helper app that gives you temporary credentials to make AWS calls. The STS is the result of authenticating with your enterprise credentials instead of using AWS long-term credentials associated with a user.
 
+You can watch this [simple demo video](https://www.youtube.com/watch?v=sO04BEZSwZA) . It covers both the web interface case as well as reusing the logic in a command line script (also included in this repository)
+
+
 ## Why?
 
 AWS federation is commonly understood as loggin in to AWS console by authenticating through Active Directory. Some people would like extend that federation model to additionally make CLI and API calls. Instead of using long-term access keys, the user can make calls using temporary credentials. Using this extended form of federation an organization can reduce the number of credentials provisioned inside AWS and instead manage authentication on its own (e.g. exclusively inside Active Directory, without ever provisioning passwords or keys to users inside AWS.)
+
 
 
 # Installation
@@ -40,15 +44,13 @@ Make www directory available through webserver. e.g. point the document root of 
 
 Adjust the variables in config.php to reflect your URL and preferences.
 
-## Local Dependencies 
- 
- - a webserver running php5
- - aws libraries for php 2.*
 
 ## Federation Dependencies
 
-This application acts as a SAML 2.0 Service Provider. For it to work,  it needs a SAML 2.0 Identity Provider. 
+This web application acts as a SAML 2.0 Service Provider. For it to work,  it needs a SAML 2.0 Identity Provider. Configure the metadata file of your IdP in config.php
+
+The command line script does not need the IdP metadata, just a file with a saml assertion which you provide.
 
 
-Fabio Arciniegas, Trend Micro 2015
+Fabio Arciniegas, 2015
  
