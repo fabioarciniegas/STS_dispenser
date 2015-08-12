@@ -362,7 +362,7 @@ AWS federation allows login in to AWS console by authenticating against enterpri
 
       </div>
       <footer class="footer">
-        <p class="copyright">&copy; Trend Micro 2015</p>
+        <p class="copyright">&copy; 2015</p>
       </footer>
     </div>
  <!-- SCRAPEABLE
