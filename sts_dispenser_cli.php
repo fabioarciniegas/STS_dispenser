@@ -14,7 +14,7 @@ use Aws\Iam\IamClient;
 # It is formatted as a php script rather than perl to keep
 # dependencies consistent between web interface and cli. 
 #
-# Fabio Arciniegas Trend Micro 2015
+# Fabio Arciniegas 2015
 
 $all_tokens_one_bash = "";
 $token_acquired = "";
