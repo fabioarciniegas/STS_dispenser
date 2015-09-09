@@ -85,6 +85,20 @@ body {
   }
 }
 
+.usage {
+        text-color: #FF0000;
+}
+
+.code {
+        color: #00FF00;
+    background-color: #000000;
+}
+
+.code-windows {
+        color: #FFFFFF;
+    background-color: #012456;
+}
+
 pre {
     text-align: left;
 }

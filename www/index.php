@@ -148,7 +148,7 @@ try {
              'version' => 'latest'));
 
     $assertion = decodeSAMLResponse($_POST['SAMLResponse']);
-    file_put_contents("/var/www/STS_dispenser/static.saml",$_POST['SAMLResponse']);
+#    file_put_contents("/var/www/STS_dispenser/static.saml",$_POST['SAMLResponse']);
 
     if(READ_RESPONSE_FILE_INSTEAD){
          error_log("reading from static saml");
@@ -321,30 +321,49 @@ You are authorized to assume more than one role. Choose role below to update tok
 
 <br/>
 
-<div align="right"><a data-toggle="collapse" data-target="#help_text" href="#" > help &gt;&gt</a></div>
+<div align="right"><a data-toggle="collapse" data-target="#help_text" href="#" > Usage Guide/Help &gt;&gt</a></div>
 
       <div id="help_text" class="collapse">
       <div class="row marketing" >
 
         <div class="col-lg-6">
-          <h4>What is this page?</h4>
-          <p>A helper app that gives you temporary credentials to make Amazon Web Services (AWS) calls.</p>
+          <h3>FAQs</h3>
+          <h4>What is this?</h4>
+          <p>An app that gives you temporary credentials (STS token) to make Amazon Web Services (AWS) calls after authenticating with your enterprise credentials.</p>
 
-          <h4>What is an STS token?</h4>
-<p>Temporary credentials you can use, for example, to avoid hard-coding a secret key on a script. </p>
+          <h4>What is an STS token? What is AWS CLI?</h4>
+          <p>A temporary token you can use to make authenticated calls to Amazon Web Services, for example using the command line tools provided by Amazon.</p>
 
+          <h4>What do I need to know before I use this?</h4>
+<p>             If you are not familiar with the AWS CLI or tokens this page is probably not useful to you (yet) and you should <a href="http://aws.amazon.com/cli/">start at AWS cli tools documentation</a> and <a href="http://docs.aws.amazon.com/STS/latest/APIReference/Welcome.html">Amazon's STS documentation</a>.
+</p> 
+
+          <h4>Who is this for?</h4>
+          <p>If you are writing scripts or have manual interaction with AWS cli but do not want to store long-term credentials in files or environment variables, this tool will probably be helpful to you.</p>
+
+<!--
           <h4>How can I use this?</h4>
 <p>The easiest way to use it is to copy paste the values as bash environment variables and start running aws cli commands. If you have not used the aws command line tools or the aws apis for scripting you need to <a href="http://aws.amazon.com/cli/">start there</a>. </p>
 
           <h4>Why use this?</h4>
 AWS federation allows login in to AWS console by authenticating against enterprise accounts (e.g.Active Directory) rather than provisioning users in AWS. <br/>Some people would like extend that federation model to make Command Line and API calls. <br/>Instead of using long-term access keys (and worrying about their safety), the user can make calls using the temporary credentials above. Using this extended form of federation an organization can reduce the number of credentials provisioned inside AWS and instead manage authentication on its own (e.g. exclusively inside Active Directory, without ever provisioning passwords or keys to users inside AWS.)</p>
-
+-->
 	</div>
 
         <div class="col-lg-6">
+          <h3>Usage Guide</h3>
+          <h4>Demo video</h4>
+          <p>You can watch this <a href="https://www.youtube.com/watch?v=sO04BEZSwZA">quick demo video </a>. </p>
 
-          <h4>Usage Demo video</h4>
-          <p>You can watch this <a href="https://www.youtube.com/watch?v=sO04BEZSwZA">a simple demo video </a>. </p>
+          <h4>Getting a token</h4>
+	  <p>Simply go to your company's single sign on page (previously provided to you. It looks something like https://adfs.mycompany.com/sign-in) and select "Amazon Web Services - STS" as the target website to log into (<a href="https://www.youtube.com/watch?v=sO04BEZSwZA">as seen in the quick demo video</a>)</p>
+
+          <h4>Using the token with bash</h4>
+          <p>Make sure you have set your aws region. All other variables (e.g. secret key) will be provided by the token:</p>
+          <pre class="code">$ export AWS_DEFAULT_REGION=us-west-2
+$ # just copy/paste token here</pre>
+
+<p>Notice that the output you are pasting are simply environment variables.</p>
 
           <h4>How long is the token valid?</h4>
           <p>60 minutes.</p>
@@ -354,12 +373,43 @@ AWS federation allows login in to AWS console by authenticating against enterpri
 
           <h4>Can I just save the token and use it later?</h4>
           <p>No. STS tokens need to be redeemed within 5 minutes of issuance. Again, this is a hard limit set by Amazon.</p>
-
-          <h4>Can I use this not just in scripts but also in larger apps?</h4>
-          <p>Not recommended. There are other options, such as giving your AMI instance a role. This service is mainly intended for running scripts or making manual calls through the cli. </p>
+          <h4>Can I use this beyond scripts?</h4>
+          <p>Not recommended. For longer term authentication there are other options, such as giving your EC2 instance a role. This service is intended as support for running scripts or making manual calls. </p>
 
         </div>
+<div>
+          <h4>Using the token with MS Windows/other shells</h4>
+          <p>The syntax for environment variables is different in windows, so you have a couple of options:</p> 
+<ul>
+ <li>Use a bash terminal under windows. <a href="http://www.cygwin.com/">Cygwin</a>, <a href="http://www.mingw.org/wiki/MSYS">mingw</a> and others are freely available.</li>
+ <li>Use sh under powershell. The simplest way to get this cmdlet it is by installing it blundled with <a href="https://desktop.github.com">git</a>. Invoke sh from powershell and follow the same instructions as above for bash</li>
+ <li>If you do not want to use any of the options above, you can process the JSON or bash outputs with your favorite tool. For example, the following takes the bash input you copy/paste from this page, parses it, and exports the values <b>using only Powershell</b>:</li>
+</ul>
+          <pre class="code-windows">
+Read-Host | %{ $variable = $_.Split('=')[0].Split(' ')[1]; $value = $_.Split('=')[1].Split(';')[0]; [Environment]::SetEnvironmentVariable($variable,($value -replace'"',''),"Process");}
+</pre>
+<p>Naturally you can copy/paste the above or save it as a helper script and reuse it:
 
+          <pre class="code-windows">
+PS C:\Users\you> convert.ps1
+# now paste the bash output, the environment variables are added:
+PS C:\Users\you> Get-ChildItem Env:
+
+Name                           Value
+----                           -----
+APPDATA                        C:\Users\you\AppData\Roaming
+AWS_ACCESS_KEY_ID              ASIAJLFSY6QKXWRDEMUQ
+AWS_SECRET_ACCESS_KEY          XyPidzd6sPj3aVYVGb8yScMp5tgCscoP8rUuhvQW
+AWS_SECURITY_TOKEN             AQoDYXdzEID//////////wEa0AJoJoBbtLUMoUw+eDay24splKzuR9MPt1iU/LkKrrzguwA6ffD0mKcsFgU38...
+CommonProgramFiles             C:\Program Files\Common Files
+...
+</pre>
+
+
+<h4>Reusing the code outside of the web interface</h4>
+<p>The code for this app (parsing the SAML response, generating STS) can be reused independently of the web interface. See <a href="https://github.com/fabioarciniegas/STS_dispenser/blob/master/sts_dispenser_cli.php">sts_dispenser_cli in github</a>  for details.</p>
+
+</div>
       </div>
       <footer class="footer">
         <p class="copyright">&copy; 2015</p>
