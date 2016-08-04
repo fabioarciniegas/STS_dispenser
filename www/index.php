@@ -180,7 +180,7 @@ try {
                                        'PrincipalArn' => $pieces[0],
                                        'SAMLAssertion' => $_POST['SAMLResponse'],
                                         //    'Policy' => 'further_restrictions_if_desired',
-                                       'DurationSeconds' => 3600));
+                                       'DurationSeconds' => 129600));
 
 
 
